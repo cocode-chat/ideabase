@@ -99,7 +99,12 @@ impl QueryExecutor {
             }
             return;
         }
-
+        if field.ends_with('$') {
+            let actual_field = &field[..field.len() - 1];
+            self.where_clauses.push(format!("{} LIKE ?", actual_field));
+            self.params.push(value.to_owned());
+            return;
+        }
         match value {
             serde_json::Value::Array(values) => {
                 let mut condition = format!("{} in (", field);

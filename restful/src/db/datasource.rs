@@ -71,6 +71,7 @@ impl DBConn {
             let columns = self.load_table_meta(&schema, &table_name).await?;
             let table_meta = TableMeta { schema: schema.to_string(), name: table_name.clone(), columns, comment: Some(table_comment) };
             let table_key = format!("{}.{}", schema, &table_name);
+            log::debug!( "mysql.table: {} loaded", &table_key);
             all_tables.insert(table_key, table_meta);
             table_name_list.push(table_name.clone());
         }
