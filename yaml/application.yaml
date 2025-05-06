@@ -1,0 +1,10 @@
+local:
+  cache_dir: /opt/cache/ideabase
+
+# 数据源
+datasource:
+  host: mysql-host
+  port: 3306
+  database: cocode
+  username: kekede
+  password: keke*de*2025

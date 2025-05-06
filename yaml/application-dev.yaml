@@ -1,0 +1,9 @@
+local:
+  cache_dir: /Users/zk/Downloads/cache
+
+# 数据源 192.168.31.41
+datasource:
+  host: 192.168.31.41
+  port: 3306
+  username: root
+  password: keke*de*2025

@@ -1,0 +1,13 @@
+services:
+  idea2-web-bff-0:
+    container_name: ideabase-0
+    image: cc/ideabase:latest
+    restart: always
+    ports:
+      - 8080:8080
+    environment:
+      - TZ="Asia/Shanghai"
+    env_file:
+      - ./Dockerfile-env-prod.properties
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
