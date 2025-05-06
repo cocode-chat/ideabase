@@ -28,14 +28,13 @@ create table if not exists moment (
 create index idx_user on moment (user_id);
 
 create table if not exists user (
-    id         bigint                             not null comment '用户唯一标识'  primary key,
+    id         bigint                             not null comment '用户唯一标识' primary key,
     username   varchar(64)                        not null comment '用户名',
     nickname   varchar(64)                        not null comment '用户昵称',
     avatar     varchar(200)                       null comment '用户头像 URL',
-    gender     enum ('male', 'female', 'other')   null comment '性别',
+    gender     enum ('m', 'f', 'o')               not null comment '性别',
     phone      varchar(20)                        null comment '手机号',
     email      varchar(100)                       null comment '电子邮箱',
     gmt_create datetime default CURRENT_TIMESTAMP null comment '用户创建时间',
     gmt_update datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '用户信息更新时间'
 ) comment '用户表' charset = utf8mb4;
-
