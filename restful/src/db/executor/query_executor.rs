@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use crate::db::datasource::{get_table, DBConn};
 
-pub const DEFAULT_MAX_COUNT: usize = 1000;
+pub const DEFAULT_MAX_COUNT: usize = 10;
 
 #[derive(Debug, Clone)]
 pub struct QueryExecutor {
@@ -97,6 +97,12 @@ impl QueryExecutor {
                 }
                 _ => {}
             }
+            return;
+        }
+        if field.ends_with('@') {
+            let actual_field = &field[..field.len() - 1];
+            self.where_clauses.push(format!("{} = ?", actual_field));
+            self.params.push(value.to_owned());
             return;
         }
         if field.ends_with('$') {
