@@ -76,7 +76,6 @@ impl QueryExecutor {
             sql.push_str(" OFFSET ");
             sql.push_str(&(self.limit * self.page).to_string());
         }
-
         sql
     }
 
