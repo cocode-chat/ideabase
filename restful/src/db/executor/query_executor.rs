@@ -99,12 +99,6 @@ impl QueryExecutor {
             }
             return;
         }
-        if field.ends_with('@') {
-            let actual_field = &field[..field.len() - 1];
-            self.where_clauses.push(format!("{} = ?", actual_field));
-            self.params.push(value.to_owned());
-            return;
-        }
         if field.ends_with('$') {
             let actual_field = &field[..field.len() - 1];
             self.where_clauses.push(format!("{} LIKE ?", actual_field));
