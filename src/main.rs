@@ -4,6 +4,7 @@ use once_cell::sync::OnceCell;
 use common::log::init_tk_log;
 use common::yaml::{load_env, GlobalEnv};
 use database::{init_datasource_conn, core::DBConn};
+use realtime::init_mysql_binlog_listener;
 use realtime::mysql_binlog_listener::start_mysql_binlog_listener;
 
 #[macro_use] extern crate lazy_static;
@@ -20,7 +21,7 @@ async fn main() -> std::io::Result<()> {
     init_datasource_conn((&G_ENV).datasource.clone()).await;
 
     // 实时数据库
-    init_db_realtime(1111);
+    init_mysql_binlog_listener((&G_ENV).datasource.clone());
 
     // build http server
     let http_server = actix_web::HttpServer::new(|| {
@@ -42,12 +43,4 @@ pub fn configure_cors() -> actix_cors::Cors {
         .allowed_headers(vec!["content-type"])
         .supports_credentials()
         .max_age(3600)
-}
-
-
-fn init_db_realtime(server_id: u64) {
-    let data_source = G_ENV.datasource.clone();
-    let binlog_filename = "mysql-bin.000001".to_string();
-    let handle = start_mysql_binlog_listener(data_source, server_id, &binlog_filename);
-    log::debug!("mysql.binlog_listener.handle-id: {}", handle.id());
 }
