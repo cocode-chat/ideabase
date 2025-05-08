@@ -82,24 +82,42 @@ impl QueryContext {
 
         // 从节点数据
         for (primary_field, slave_node_field_path) in primary_relate_kv {
+            // 获取主节点中关联字段的值，用于查询从节点数据
             let primary_field_value = primary_node_record.get(primary_field).unwrap();
+            // 从路径中提取从节点字段名称（取最后一个斜杠后的部分）
             let slave_node_field = slave_node_field_path.split("/").last().unwrap();
+            // 构建从节点字段值的键，格式为"字段名/字段值"
             let slave_node_field_value_key = format!("{}/{}", slave_node_field, primary_field_value);
+            // 根据从节点字段路径和值键获取对应的从节点数据
             let slave_node_field_data_opt = self.get_slave_node_data(slave_node_field_path, &slave_node_field_value_key);
             if slave_node_field_data_opt.is_some() {
-                let node_data_relative_path = get_parent_node_path(slave_node_field_path).strip_prefix(&format!("{}/", namespace)).unwrap_or("").to_string();
-                let node_data_relative_path = if node_data_relative_path.is_empty() {
-                    get_parent_node_path(slave_node_field_path)
-                } else {
-                    node_data_relative_path
-                };
-
+                // 计算从节点数据的相对路径
+                // 1. 首先获取从节点字段路径的父路径
+                // 2. 尝试去除命名空间前缀
+                // 3. 如果去除成功且结果为空，则使用原始父路径
+                // 4. 如果去除失败，也使用原始父路径
+                let node_data_relative_path = get_parent_node_path(slave_node_field_path)
+                    .strip_prefix(&format!("{}/", namespace))
+                    .map_or_else(
+                        || get_parent_node_path(slave_node_field_path),  // 前缀去除失败时的处理
+                        |stripped| if stripped.is_empty() {  // 前缀去除成功但结果为空的处理
+                            get_parent_node_path(slave_node_field_path) 
+                        } else {  // 前缀去除成功且结果非空的处理
+                            stripped.to_string() 
+                        }
+                    );
+                
+                // 根据相对路径的格式决定如何处理从节点数据
                 if node_data_relative_path.contains("/") {
+                    // 如果路径包含"/"，表示需要进行嵌套结构转换
                     if let Some(slave_data) = slave_node_field_data_opt {
+                        // 创建一个只有一个键值对的映射，用于转换
                         let slave_field_value_map = std::iter::once((node_data_relative_path, slave_data)).collect::<HashMap<_, _>>();
+                        // 使用transform_salve_value函数将扁平结构转换为嵌套结构
                         result_map.extend(transform_salve_value(slave_field_value_map));
                     }
                 } else {
+                    // 如果路径不包含"/"，直接将数据添加到结果映射中
                     result_map.insert(node_data_relative_path, slave_node_field_data_opt.unwrap());
                 }
             }
