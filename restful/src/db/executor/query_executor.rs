@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use crate::db::datasource::{get_table, DBConn};
 
-pub const DEFAULT_MAX_COUNT: usize = 1000;
+pub const DEFAULT_MAX_COUNT: usize = 10;
 
 #[derive(Debug, Clone)]
 pub struct QueryExecutor {
@@ -29,25 +29,19 @@ impl QueryExecutor {
         }
     }
 
-    pub fn table(&self) -> &str {
-        &self.table
-    }
-
-    pub fn schema(&self) -> &str { &self.schema }
-    
-    pub fn parse_table(&mut self, table_key: &str) -> Result<(), String> {
-        let table_key = if table_key.ends_with("[]") { &table_key[..table_key.len()-2] } else { table_key };
-        let schema_table_vec = table_key.split(".").collect::<Vec<&str>>();
-        let schema = schema_table_vec[0];
-        let table = schema_table_vec[1];
-        match get_table(&schema, table) {
-            Some(table) => {
-                self.table = table.name.clone();
-                self.schema = table.schema.clone();
-                Ok(())
-            },
-            None => Err(format!("table: {} not exists", table_key))
-        }
+    pub async fn exec(&self, db: &DBConn) -> Result<Vec<HashMap<String, serde_json::Value>>, sqlx::Error> {
+        let sql = self.to_sql();
+        log::info!("sql.exec: {}, params: {}", sql, serde_json::to_string(&self.params).unwrap());
+        let string_params: Vec<String> = self.params.iter()
+            .map(|v| match v {
+                serde_json::Value::Null => "NULL".to_string(),
+                serde_json::Value::String(s) => s.clone(),
+                serde_json::Value::Array(_) | serde_json::Value::Object(_) =>
+                    serde_json::to_string(v).unwrap_or_else(|_| "NULL".to_string()),
+                _ => v.to_string(),
+            })
+            .collect();
+        db.query_list(&sql, string_params).await
     }
 
     pub fn to_sql(&self) -> String {
@@ -68,16 +62,30 @@ impl QueryExecutor {
             sql.push_str(" ORDER BY ");
             sql.push_str(order);
         }
-        
+
         if self.limit > 0 {
             sql.push_str(" LIMIT ");
             sql.push_str(&self.limit.to_string());
-            
+
             sql.push_str(" OFFSET ");
             sql.push_str(&(self.limit * self.page).to_string());
         }
-
         sql
+    }
+    
+    pub fn parse_table(&mut self, table_key: &str) -> Result<(), String> {
+        let table_key = if table_key.ends_with("[]") { &table_key[..table_key.len()-2] } else { table_key };
+        let schema_table_vec = table_key.split(".").collect::<Vec<&str>>();
+        let schema = schema_table_vec[0];
+        let table = schema_table_vec[1];
+        match get_table(&schema, table) {
+            Some(table) => {
+                self.table = table.name.clone();
+                self.schema = table.schema.clone();
+                Ok(())
+            },
+            None => Err(format!("table: {} not exists", table_key))
+        }
     }
 
     pub fn parse_condition(&mut self, field: &str, value: &serde_json::Value) {
@@ -90,9 +98,7 @@ impl QueryExecutor {
                 }
                 "column" => {
                     if let serde_json::Value::String(cols) = value {
-                        self.columns = cols.split(',')
-                            .map(|s| s.trim().to_string())
-                            .collect();
+                        self.columns.extend(cols.split(',').map(|s| s.trim().to_string().to_lowercase()));
                     }
                 }
                 _ => {}
@@ -123,21 +129,6 @@ impl QueryExecutor {
         }
     }
 
-    pub async fn exec(&self, db: &DBConn) -> Result<Vec<HashMap<String, serde_json::Value>>, sqlx::Error> {
-        let sql = self.to_sql();
-        log::info!("sql.exec: {}, params: {}", sql, serde_json::to_string(&self.params).unwrap());
-        let string_params: Vec<String> = self.params.iter()
-            .map(|v| match v {
-                serde_json::Value::Null => "NULL".to_string(),
-                serde_json::Value::String(s) => s.clone(),
-                serde_json::Value::Array(_) | serde_json::Value::Object(_) =>
-                    serde_json::to_string(v).unwrap_or_else(|_| "NULL".to_string()),
-                _ => v.to_string(),
-            })
-            .collect();
-        db.query_list(&sql, string_params).await
-    }
-
     pub fn page_size(&mut self, page: serde_json::Value, count: serde_json::Value) {
         self.page = Self::parse_num(&page, 0);
         self.limit = Self::parse_num(&count, 10);
@@ -150,5 +141,12 @@ impl QueryExecutor {
                 .unwrap_or(default_val),
             _ => default_val,
         }
+    }
+
+    pub fn add_column(&mut self, column: &str) {
+        if self.columns.iter().any(|c| c.eq(column)) {
+            return;
+        }
+        self.columns.push(column.to_string());
     }
 }
