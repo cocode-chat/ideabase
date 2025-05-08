@@ -3,8 +3,8 @@ use fnv::FnvHashMap;
 use crate::db::datasource::DBConn;
 use crate::db::executor::query_executor::DEFAULT_MAX_COUNT;
 use crate::handler::build_rpc_value;
-use crate::utils::hashmap::transform;
 use crate::db::context::query::{get_parent_node_path, QueryContext, QueryNode, RATIO_PRIMARY};
+use crate::utils::transform::transform_salve_value;
 
 /// 处理GET请求的异步方法
 ///
@@ -24,7 +24,7 @@ impl QueryContext {
         let query_node = self.layer_query_node.clone();
 
         // 遍历每个层级的节点
-        for (depth, nodes) in query_node {
+        for (_, nodes) in query_node {
             // 创建一个可变的克隆来进行排序
             let mut sorted_nodes = nodes.clone();
             // 节点排序, 权重高的先处理
@@ -32,7 +32,6 @@ impl QueryContext {
             // 查询每个节点的数据
             for node in sorted_nodes {
                 let mut node_rc = node.borrow_mut();
-                println!("{} weight: {} node: {}", depth, node_rc.weight, node_rc.path);
                 // 处理主节点
                 if node_rc.weight >= RATIO_PRIMARY {
                     self.query_primary_node(&mut *node_rc, db).await;
@@ -42,73 +41,83 @@ impl QueryContext {
             }
         }
 
-        // 遍历数据节点
-        let mut flat_response_map = HashMap::new();
+        // 构建结果
+        let mut response_map = HashMap::new();
         for (node_path, results) in &self.primary_node_data {
             let node_ref = self.query_node.get(node_path).unwrap().borrow();
+            let namespace = get_parent_node_path(&node_path);
             let node_name = node_ref.name.clone();
             let node_path = node_ref.path.clone();
-            // 创建一个空的HashMap作为备选值
-            let related_kv = self.primary_relate_kv.get(&node_path).cloned().unwrap_or_default();
             let is_list = node_ref.is_list;
-
-            if is_list { // 处理列表类型节点
+            let primary_relate_kv = self.primary_relate_kv.get(&node_path).cloned().unwrap_or_default();
+            if is_list {
                 let primary_node_result_list = results.into_iter()
-                    .map(|result| self.build_primary_value(&node_name, result, &related_kv))
+                    .map(|result| self.build_primary_value(&namespace, &node_name, result, &primary_relate_kv))
                     .collect::<Vec<_>>();
                 // 获取父级命名空间并插入结果列表
                 let namespace = get_parent_node_path(&node_path);
-                flat_response_map.insert(namespace, serde_json::json!(primary_node_result_list));
+                response_map.insert(namespace, serde_json::json!(primary_node_result_list));
             } else { // 处理单个节点
                 // 获取第一个结果或空映射表
                 let result = results.first().cloned().unwrap_or_default();
-                flat_response_map.insert(node_path.clone(), serde_json::json!(result));
-                // 处理关联的从节点数据
-                for (relate_field, relate_node_field_path) in related_kv {
-                    let related_field_value = result.get(&relate_field).unwrap();
-                    if let Some(relate_field_data) = self.get_relate_data(related_field_value, &relate_node_field_path) {
-                        let node_data_path = get_parent_node_path(&relate_node_field_path);
-                        flat_response_map.insert(node_data_path, relate_field_data);
-                    }
+                let primary_value = self.build_primary_value(&namespace, &node_name, &result, &primary_relate_kv);
+                for (key, value) in primary_value {
+                    response_map.insert(key, value);
                 }
             }
         }
 
-        // 构建结果 - 主从节点处理
+        // 返回结果
         let code = self.code;
         let msg = self.err.clone();
-        build_rpc_value(code as u32, msg, transform(flat_response_map))
+        build_rpc_value(code as u32, msg, response_map)
     }
 
-    fn build_primary_value(&self, name: &str, record: &HashMap<String, serde_json::Value>, related_kv: &HashMap<String, String>) -> HashMap<String, serde_json::Value> {
-        let mut result_item_value = HashMap::<String, serde_json::Value>::new();
+    fn build_primary_value(&self, namespace: &str, primary_node_name: &str, primary_node_record: &HashMap<String, serde_json::Value>,
+                           primary_relate_kv: &HashMap<String, String>) -> HashMap<String, serde_json::Value> {
+        let mut result_map = HashMap::<String, serde_json::Value>::new();
+
         // 主节点数据
-        result_item_value.insert(name.to_string(), serde_json::to_value(record.clone()).unwrap());
+        result_map.insert(primary_node_name.to_string(), serde_json::to_value(primary_node_record.clone()).unwrap());
 
         // 从节点数据
-        for (related_field, relate_node_field_path) in related_kv {
-            let related_field_value = record.get(related_field).unwrap();
-            let relate_field_data = self.get_relate_data(related_field_value, relate_node_field_path);
-            if relate_field_data.is_some() {
-                let node_data_path = relate_node_field_path.split('/').nth_back(1).unwrap();
-                result_item_value.insert(node_data_path.to_string(), relate_field_data.unwrap());
+        for (primary_field, slave_node_field_path) in primary_relate_kv {
+            let primary_field_value = primary_node_record.get(primary_field).unwrap();
+            let slave_node_field = slave_node_field_path.split("/").last().unwrap();
+            let slave_node_field_value_key = format!("{}/{}", slave_node_field, primary_field_value);
+            let slave_node_field_data_opt = self.get_slave_node_data(slave_node_field_path, &slave_node_field_value_key);
+            if slave_node_field_data_opt.is_some() {
+                let node_data_relative_path = get_parent_node_path(slave_node_field_path).strip_prefix(&format!("{}/", namespace)).unwrap_or("").to_string();
+                let node_data_relative_path = if node_data_relative_path.is_empty() {
+                    get_parent_node_path(slave_node_field_path)
+                } else {
+                    node_data_relative_path
+                };
+
+                if node_data_relative_path.contains("/") {
+                    if let Some(slave_data) = slave_node_field_data_opt {
+                        let slave_field_value_map = std::iter::once((node_data_relative_path, slave_data)).collect::<HashMap<_, _>>();
+                        result_map.extend(transform_salve_value(slave_field_value_map));
+                    }
+                } else {
+                    result_map.insert(node_data_relative_path, slave_node_field_data_opt.unwrap());
+                }
             }
         }
-        result_item_value
+        
+        result_map
     }
 
-    fn get_relate_data(&self, related_field_value: &serde_json::Value, relate_node_field_path: &str) -> Option<serde_json::Value> {
-        let relate_node_path = get_parent_node_path(&relate_node_field_path);
-        let relate_node_field = &relate_node_field_path.split("/").last()?;
-        let relate_field_key = format!("{}/{}", relate_node_field, related_field_value);
-        let relate_field_data_opt = self.slave_node_relate_data.get(&relate_node_path)?.get(&relate_field_key);
+    fn get_slave_node_data(&self, slave_node_field_path: &str, slave_node_field_value_key: &str) -> Option<serde_json::Value> {
+        let slave_node_path = get_parent_node_path(&slave_node_field_path);
+        let relate_field_data_opt = self.slave_node_relate_data.get(&slave_node_path)?.get(slave_node_field_value_key);
         match relate_field_data_opt {
             None => {
-                log::debug!("relate.data: {}.{} is empty", &relate_node_path, relate_field_key);
+                log::debug!("slave.data: {}.{} is empty", &slave_node_path, slave_node_field_value_key);
                 None
             }
             Some(relate_field_data) => {
-                if self.query_node.get(&relate_node_path).unwrap().borrow().is_list {
+                if self.query_node.get(&slave_node_path).unwrap().borrow().is_list {
                     Some(serde_json::to_value(relate_field_data.clone()).unwrap())
                 } else {
                     Some(serde_json::to_value(relate_field_data[0].clone()).unwrap())
@@ -118,13 +127,17 @@ impl QueryContext {
     }
 
     async fn query_primary_node(&mut self, node: &mut QueryNode, db: &DBConn) {
+        // 被关联字段必须在查询字段列表中
+        let primary_relate_kv = self.primary_relate_kv.get(&node.path).cloned().unwrap_or_default();
+        for (column, _) in primary_relate_kv {
+            node.sql_executor.add_column(&column);
+        }
         // 查询主节点数据
         let result_opt = self.query_node_data(node, db).await;
         match result_opt {
             Some(node_results) => {
                 // 保存查询结果到节点数据映射表
                 self.primary_node_data.insert(node.path.clone(), node_results.clone());
-                
                 // 处理列表类型节点的结果
                 if node.is_list {
                     // 遍历列表中的每个结果项
@@ -180,6 +193,8 @@ impl QueryContext {
                 }
                 None => { continue; }
             }
+            // 关联字段必须在查询字段列表中
+            node.sql_executor.add_column(&field_name);
         }
 
         // 查询节点数据

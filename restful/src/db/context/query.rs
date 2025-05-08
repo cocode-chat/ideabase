@@ -95,9 +95,9 @@ impl QueryContext {
         }
 
         // 从队列中依次处理节点，构建查询上下文
-        while let Some((parent, name, node_val, depth)) = json_vec_deque.pop_front() {
+        while let Some((parent_path, name, node_val, depth)) = json_vec_deque.pop_front() {
             // 构建节点的完整路径
-            let node_path = if parent.is_empty() { name.clone() } else { format!("{}/{}", parent, name) };
+            let node_path = if parent_path.is_empty() { name.clone() } else { format!("{}/{}", parent_path, name) };
 
             // 处理数组节点（名称以[]结尾的节点）
             if name.ends_with("[]") {
@@ -113,6 +113,8 @@ impl QueryContext {
                 }
             } else { // 处理普通节点，提取属性和关联关系
                 let mut attributes = HashMap::new();
+                // 判断节点是否属于列表（父节点是否为数组）
+                let mut is_list = parent_path.ends_with("[]");
                 if let Some(map) = node_val.as_object() {
                     for (field_key, field_value) in map {
                         if is_scalar_field(field_value) {
@@ -120,9 +122,11 @@ impl QueryContext {
                             if field_key.ends_with('@') {
                                 let field_name = field_key[..(field_key.len()-1)].to_string();
                                 let field_path = format!("{}/{}", &node_path, field_name);
+                                 // 依赖关系是唯一索引则节点数据结果一定不是 list
+                                 if field_name.as_str() == "id" { is_list = false; }
+                                // 关联关系
                                 if let serde_json::Value::String(primary_field_path) = field_value {
                                     slave_relate_kv.entry(node_path.clone()).or_default().insert(field_name, primary_field_path.to_string());
-
                                     // 添加主节点字段对应的值到值映射表中
                                     primary_node_related_field_values.insert(primary_field_path.to_string(), serde_json::Value::Null);
                                     // 添加主节点字段对应的值到字段映射表中
@@ -137,8 +141,6 @@ impl QueryContext {
                         }
                     }
                 }
-                // 判断节点是否属于列表（父节点是否为数组）
-                let is_list = parent.ends_with("[]");
                 
                 // 创建查询节点并添加到对应深度的节点列表中
                 let shared_node = Rc::new(RefCell::new(QueryNode {
