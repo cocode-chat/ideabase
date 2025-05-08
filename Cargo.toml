@@ -9,7 +9,7 @@ authors = [
 keywords = ["apijson", "firebase", "ai-baas"]
 
 [workspace]
-members = [ "common", "restful", "realtime", "storage"]
+members = [ "common", "restful", "realtime", "file-storage"]
 resolver = "2"
 
 [dependencies]
@@ -17,7 +17,7 @@ common = { path = "common" }
 rag = { path = "rag" }
 restful = { path = "restful" }
 realtime = { path = "realtime" }
-storage = { path = "storage" }
+storage = { path = "file-storage" }
 
 log = {  version = "0.4" }
 lazy_static = { version = "1"}
