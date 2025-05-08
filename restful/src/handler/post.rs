@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use common::utils::get_next_id;
-use crate::db::datasource::{is_table_exists, DBConn};
+use database::core::{is_table_exists, DBConn};
 use crate::handler::build_rpc_value;
 
 /// 处理数据插入请求

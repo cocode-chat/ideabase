@@ -1,16 +1,19 @@
 use lazy_static::lazy_static;
 use std::sync::RwLock;
 use std::collections::HashMap;
+use fnv::FnvHashMap;
 use sqlx::{mysql::{MySqlColumn, MySqlRow, MySqlPool}, Column, Row, TypeInfo, types::Decimal};
+
 use common::utils::base64_encode;
 use common::yaml::DataSource;
-use crate::db::{ColumnMeta, DbMeta, TableMeta};
+use crate::common::{ColumnMeta, DbMeta, TableMeta};
 
 lazy_static! {
-    static ref DB_MAP: RwLock<HashMap<String, DbMeta>> = RwLock::new(HashMap::new());
-    static ref DB_TABLES_MAP: RwLock<HashMap<String, Vec<String>>> = RwLock::new(HashMap::new());
-    static ref TABLE_MAP: RwLock<HashMap<String, TableMeta>> = RwLock::new(HashMap::new());
+    static ref DB_MAP: RwLock<FnvHashMap<String, DbMeta>> = RwLock::new(FnvHashMap::default());
+    static ref DB_TABLES_MAP: RwLock<FnvHashMap<String, Vec<String>>> = RwLock::new(FnvHashMap::default());
+    static ref TABLE_MAP: RwLock<FnvHashMap<String, TableMeta>> = RwLock::new(FnvHashMap::default());
 }
+
 // MySQL系统数据库列表
 const SYS_DB: &[&str] = &["information_schema", "mysql", "performance_schema", "sys"];
 
@@ -76,17 +79,15 @@ impl DBConn {
         Ok(())
     }
 
-    async fn load_table_meta(&self, schema: &str, table_name: &str) -> Result<HashMap<String, ColumnMeta>, sqlx::Error> {
+    async fn load_table_meta(&self, schema: &str, table_name: &str) -> Result<FnvHashMap<String, ColumnMeta>, sqlx::Error> {
         let columns: Vec<ColumnMeta> = sqlx::query_as(&format!("SHOW FULL COLUMNS FROM {}.{}", schema, table_name))
             .fetch_all(&self.pool).await?;
-        let mut column_map = HashMap::new();
+        let mut column_map = FnvHashMap::default();
         for column in columns {
             column_map.insert(column.field.clone(), column);
         }
         Ok(column_map)
     }
-
-
 
     pub async fn query_one(&self, sql: &str, params: Vec<String>) -> Result<Option<HashMap<String, serde_json::Value>>, sqlx::Error> {
         let sql = if !sql.to_lowercase().contains("limit") {

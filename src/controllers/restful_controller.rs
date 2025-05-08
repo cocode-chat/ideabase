@@ -3,7 +3,7 @@ use actix_web::{get, post, web, HttpResponse, Responder};
 
 use crate::G_DB;
 use common::rpc::RpcResult;
-use restful::db::datasource::{get_table, get_table_name_list};
+use database::core::{get_table, get_table_name_list};
 use restful::handler::delete::handle_delete;
 use restful::handler::get::handle_get;
 use restful::handler::head::handle_head;

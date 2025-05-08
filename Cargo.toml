@@ -6,17 +6,18 @@ description = "a AI powered BaaS, 兼具安全与性能的国产Firebase！"
 authors = [
     "ReliefZk <reliefzk@gmail.com>",
 ]
-keywords = ["apijson", "firebase", "ai-baas"]
+keywords = ["apijson", "firebase", "ai-baas", "ai-rag"]
 
 [workspace]
-members = [ "common", "restful", "realtime", "file-storage"]
+members = ["common/core", "common/database", "restful", "realtime", "file-storage"]
 resolver = "2"
 
 [dependencies]
-common = { path = "common" }
-rag = { path = "rag" }
+common = { path = "common/core" }
+database = { path = "common/database" }
 restful = { path = "restful" }
 realtime = { path = "realtime" }
+rag = { path = "ai-rag" }
 storage = { path = "file-storage" }
 
 log = {  version = "0.4" }

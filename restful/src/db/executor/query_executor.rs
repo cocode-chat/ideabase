@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::db::datasource::{get_table, DBConn};
+use database::core::{get_table, DBConn};
 
 pub const DEFAULT_MAX_COUNT: usize = 10;
 

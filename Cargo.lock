@@ -1172,6 +1172,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "database"
+version = "1.0.0"
+dependencies = [
+ "chrono",
+ "common",
+ "fnv",
+ "lazy_static",
+ "log",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tokio-test",
+]
+
+[[package]]
 name = "der"
 version = "0.7.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2255,6 +2270,7 @@ dependencies = [
  "actix-cors",
  "actix-web",
  "common",
+ "database",
  "http 0.2.12",
  "lazy_static",
  "log",
@@ -3629,6 +3645,7 @@ version = "1.0.0"
 dependencies = [
  "chrono",
  "common",
+ "database",
  "fnv",
  "lazy_static",
  "log",
@@ -4498,14 +4515,8 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 name = "storage"
 version = "1.0.0"
 dependencies = [
- "chrono",
- "common",
- "fnv",
- "lazy_static",
  "log",
  "rust-s3",
- "serde",
- "serde_json",
 ]
 
 [[package]]

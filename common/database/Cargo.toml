@@ -1,13 +1,12 @@
 [package]
-name = "restful"
+name = "database"
 version = "1.0.0"
 edition = "2024"
-description = "ideabase restful api"
+description = "ideabase common database module"
 
 
 [dependencies]
-common = { path = "../common/core" }
-database = { path = "../common/database" }
+common = { path = "../core" }
 
 log = {  version = "0.4" }
 lazy_static = { version = "1"}
@@ -22,3 +21,4 @@ serde = { version = "1.0", features = ["derive"] }
 
 # database
 sqlx = { version = "0.8", features = ["runtime-tokio-native-tls", "chrono", "mysql", "rust_decimal"] }
+tokio-test = "0.4"

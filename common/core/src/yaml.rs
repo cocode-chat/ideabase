@@ -12,7 +12,7 @@ pub fn load_env() -> GlobalEnv {
     let global_env = Figment::new()
         .merge(Yaml::file(main_conf)).merge(Yaml::file(active_conf))
         .extract().expect("application yaml conf parse error");
-    log::info!("common.env \n {}", serde_json::to_string_pretty(&global_env).unwrap());
+    log::info!("core.env \n {}", serde_json::to_string_pretty(&global_env).unwrap());
     global_env
 }
 

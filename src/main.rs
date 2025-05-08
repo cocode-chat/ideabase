@@ -3,8 +3,8 @@ mod controllers;
 use once_cell::sync::OnceCell;
 use common::log::init_tk_log;
 use common::yaml::{load_env, GlobalEnv};
+use database::{init_datasource_conn, core::DBConn};
 use realtime::mysql_binlog_listener::start_mysql_binlog_listener;
-use restful::db::datasource::DBConn;
 
 #[macro_use] extern crate lazy_static;
 lazy_static! {
@@ -17,7 +17,7 @@ pub static G_DB: OnceCell<DBConn> = OnceCell::new();
 async fn main() -> std::io::Result<()> {
     // 基础初始化
     init_tk_log();
-    init_db().await;
+    init_datasource_conn((&G_ENV).datasource.clone()).await;
 
     // 实时数据库
     init_db_realtime(1111);
@@ -44,10 +44,6 @@ pub fn configure_cors() -> actix_cors::Cors {
         .max_age(3600)
 }
 
-pub async fn init_db() {
-    let db = DBConn::new((&G_ENV).datasource.clone()).await;
-    G_DB.set(db).expect("database already initialized");
-}
 
 fn init_db_realtime(server_id: u64) {
     let data_source = G_ENV.datasource.clone();
