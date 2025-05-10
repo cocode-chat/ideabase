@@ -12,7 +12,7 @@ pub fn load_env() -> GlobalEnv {
     let global_env = Figment::new()
         .merge(Yaml::file(main_conf)).merge(Yaml::file(active_conf))
         .extract().expect("application yaml conf parse error");
-    log::info!("common.env \n {}", serde_json::to_string_pretty(&global_env).unwrap());
+    log::info!("core.env \n {}", serde_json::to_string_pretty(&global_env).unwrap());
     global_env
 }
 
@@ -20,15 +20,18 @@ pub fn load_env() -> GlobalEnv {
 /// 配置变量
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GlobalEnv {
-    pub local: LocalConf,
-    // 数据库 配置
+    // 缓存配置
+    pub cache: Cache,
+    // 关系数据源
     pub datasource: DataSource,
+    // 向量数据源
+    pub vector: VectorDb,
 }
 
-/// 模型相关
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct LocalConf {
-    pub cache_dir: String,
+pub struct Cache {
+    // 本地缓存目录
+    pub dir: String,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DataSource {
@@ -36,5 +39,11 @@ pub struct DataSource {
     pub port: u32,
     pub username: String,
     pub password: String,
+}
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct VectorDb {
+    pub schema: String,
+    pub host: String,
+    pub port: u32,
 }
 

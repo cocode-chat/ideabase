@@ -2,12 +2,12 @@
 name = "restful"
 version = "1.0.0"
 edition = "2024"
-description = "ideabase rest api"
-
+description = "ideabase restful api"
 
 
 [dependencies]
-common = { path = "../common" }
+common = { path = "../common/core" }
+database = { path = "../common/database" }
 
 log = {  version = "0.4" }
 lazy_static = { version = "1"}

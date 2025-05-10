@@ -2,7 +2,7 @@ use fnv::FnvHashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, VecDeque};
-use crate::db::executor::query_executor::QueryExecutor;
+use crate::db::query_executor::QueryExecutor;
 
 /// 主节点权重常量
 pub const RATIO_PRIMARY: i32 = 10000;
@@ -212,12 +212,6 @@ impl QueryContext {
     }
 }
 
-
-
-pub fn get_parent_node_path(node_path: &str) -> String {
-    node_path.rsplit_once('/').map(|(parent, _)| parent.to_string()).unwrap_or_default()
-}
-
 /// 判断是否为标量
 fn is_scalar_field(v: &serde_json::Value) -> bool { v.is_number() || v.is_string() || v.is_boolean() }
 
@@ -234,11 +228,15 @@ fn collect_scalar_attrs(v: &serde_json::Value) -> FnvHashMap<String, serde_json:
     scalar_attrs
 }
 
+pub fn get_parent_node_path(node_path: &str) -> String {
+    node_path.rsplit_once('/').map(|(parent, _)| parent.to_string()).unwrap_or_default()
+}
+
 #[cfg(test)]
 mod tests {
     use common::json::json_to_json_value;
     use common::utils::serde_json_map_to_hashmap;
-    use crate::db::context::query::QueryContext;
+    use crate::db::query_context::QueryContext;
 
     #[test]
     fn test_query_ctx() {

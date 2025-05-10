@@ -1,5 +1,5 @@
-local:
-  cache_dir: /opt/cache/ideabase
+cache:
+  dir: /opt/cache/ideabase
 
 # 数据源
 datasource:
@@ -8,3 +8,9 @@ datasource:
   database: cocode
   username: kekede
   password: keke*de*2025
+
+# 向量数据库
+vector:
+  schema: http
+  host: qdrant
+  port: 6333
