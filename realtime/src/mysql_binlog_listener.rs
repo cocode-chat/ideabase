@@ -18,52 +18,62 @@ pub fn start_mysql_binlog_listener(data_source: DataSource, server_id: u64, binl
     })
 }
 
-async fn read_mysql_binlog(data_source: DataSource, server_id: u64, binlog_filename: &str) {
-    let username = data_source.username;
-    let password = data_source.password;
-    let host = data_source.host;
-    let port = data_source.port;
-    // let database = data_source.database;
-    let jdbc_url = format!("mysql://{}:{}@{}:{}", username, password, host, port);
+async fn read_mysql_binlog(ds: DataSource, server_id: u64, binlog_filename: &str) {
+    let jdbc_url = format!("mysql://{}:{}@{}:{}", ds.username, ds.password, ds.host, ds.port);
 
-    // 2. 构造 BinlogClient
-    let mut client = BinlogClient {
-        server_id,
-        url: jdbc_url,
-        binlog_filename: binlog_filename.to_string(),
-        binlog_position: 4,
-        gtid_enabled: false,
-        gtid_set: String::new(),
-        heartbeat_interval_secs: 10,
-        timeout_secs: 6,
-    };
-
-    // 3. 建立连接并获取流
-    let mut stream = client.connect().await.unwrap();
-    log::debug!("MySQL.binlog Stream connected...");
-
-    // 4. 循环读取事件
     loop {
-        let (_, data) = stream.read().await.unwrap();
-        match data {
-            EventData::WriteRows(e) => {
-                for row in e.rows {
-                    log::debug!("插入行: {:?}", row.column_values);
+        let mut client = BinlogClient {
+            server_id,
+            url: jdbc_url.clone(),
+            binlog_filename: binlog_filename.to_string(),
+            binlog_position: 4,
+            gtid_enabled: false,
+            gtid_set: String::new(),
+            heartbeat_interval_secs: 10,
+            timeout_secs: 6,
+        };
+
+        match client.connect().await {
+            Ok(mut stream) => {
+                log::info!("MySQL.binlog Stream connected...");
+                loop {
+                    match stream.read().await {
+                        Ok((_, data)) => handle_binlog_event(data),
+                        Err(e) => {
+                            log::error!("读取MySQL.binlog事件失败: {:?}", e);
+                            break; // 连接断开，跳出内层循环，重试连接
+                        }
+                    }
                 }
             }
-            EventData::UpdateRows(e) => {
-                for (before, after) in e.rows {
-                    log::debug!("更新行: {:?} -> {:?}", before.column_values, after.column_values);
-                }
+            Err(e) => {
+                log::error!("连接 MySQL binlog 失败: {:?}", e);
             }
-            EventData::DeleteRows(e) => {
-                for row in e.rows {
-                    log::info!("删除行: {:?}", row.column_values);
-                }
+        }
+        // 等待一段时间后重试连接
+        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+    }
+}
+
+fn handle_binlog_event(data: EventData) {
+    match data {
+        EventData::WriteRows(e) => {
+            for row in e.rows {
+                log::info!("插入行: {:?}", row.column_values);
             }
-            other => {
-                log::debug!("其他事件: {:?}", other);
+        }
+        EventData::UpdateRows(e) => {
+            for (before, after) in e.rows {
+                log::info!("更新行: {:?} -> {:?}", before.column_values, after.column_values);
             }
+        }
+        EventData::DeleteRows(e) => {
+            for row in e.rows {
+                log::info!("删除行: {:?}", row.column_values);
+            }
+        }
+        other => {
+            log::debug!("其他事件: {:?}", other);
         }
     }
 }
