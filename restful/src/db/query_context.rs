@@ -80,13 +80,22 @@ impl QueryContext {
             if key.ends_with("[]") {
                 // 处理数组节点：收集标量属性并将子对象加入队列
                 namespace_node.insert(key.clone(), collect_scalar_attrs(&val));
+                // 检查当前值是否为JSON对象
                 if let Some(map) = val.as_object() {
-                    for (k, v) in map {
-                        if v.is_object() {
-                            // 处理普通节点：直接加入队列，深度为2
+                    // 遍历对象的所有键值对
+                    map.iter()
+                        // 过滤出值也是对象的键值对
+                        .filter(|(_, v)| v.is_object())
+                        // 对每个符合条件的键值对执行操作
+                        .for_each(|(k, v)| {
+                            // 将子对象加入处理队列：
+                            // - 父路径: 当前数组节点的key
+                            // - 子节点名称: k
+                            // - 子节点值: v 
+                            // - 深度设为2(相对于根节点的深度)
                             json_vec_deque.push_back((key.clone(), k.clone(), v.clone(), 2));
                         }
-                    }
+                    );
                 }
             } else {
                 // 处理普通节点：直接加入队列，深度为1
@@ -104,12 +113,12 @@ impl QueryContext {
                 namespace_node.insert(node_path.clone(), collect_scalar_attrs(&node_val));
                 // 递归处理数组节点的子对象
                 if let Some(map) = node_val.as_object() {
-                    for (k, v) in map {
-                        if v.is_object() {
-                            // 处理普通节点：直接加入队列，深度为+1
+                    map.iter()
+                        .filter(|(_, v)| v.is_object())
+                        .for_each(|(k, v)| {
                             json_vec_deque.push_back((node_path.clone(), k.clone(), v.clone(), depth + 1));
                         }
-                    }
+                    );
                 }
             } else { // 处理普通节点，提取属性和关联关系
                 let mut attributes = HashMap::new();
@@ -181,15 +190,15 @@ impl QueryContext {
         let mut counts: HashMap<String, u32> = HashMap::new();
         for node_rc in &all_nodes {
             let node_path = node_rc.borrow().path.clone();
-
-            let node_relate_kv_opt = self.slave_relate_kv.get(&node_path);
-            match node_relate_kv_opt {
-                None => {}
-                Some(relate) => {
-                    for parent_path in relate.values() {
-                        *counts.entry(parent_path.clone()).or_insert(0) += 1;
-                    }
-                }
+            // 检查当前节点是否有从属关系映射
+            if let Some(relate) = self.slave_relate_kv.get(&node_path) {
+                // 遍历所有从属关系映射值（主节点路径）
+                relate.values().for_each(|parent_path| {
+                    // 更新主节点被依赖计数：
+                    // 1. 如果主节点路径不存在于counts中，则插入并初始化为0
+                    // 2. 对主节点路径的计数加1
+                    *counts.entry(parent_path.clone()).or_insert(0) += 1;
+                });
             }
         }
 
@@ -197,7 +206,6 @@ impl QueryContext {
         // 1. 无依赖的节点获得基础权重 RATIO_PRIMARY
         // 2. 被依赖的节点获得额外权重 RATIO_RELATED^count
         for node_rc in &all_nodes {
-            // 使用临时作用域避免长时间持有借用
             let (path, has_dep) = {
                 let b = node_rc.borrow();
                 let b_path = b.path.clone();
@@ -217,17 +225,22 @@ fn is_scalar_field(v: &serde_json::Value) -> bool { v.is_number() || v.is_string
 
 /// 从 JSON 对象中收集标量属性
 fn collect_scalar_attrs(v: &serde_json::Value) -> FnvHashMap<String, serde_json::Value> {
-    let mut scalar_attrs = FnvHashMap::default();
-    if let Some(o) = v.as_object() {
-        for (k, val) in o {
-            if is_scalar_field(val) {
-                scalar_attrs.insert(k.clone(), val.clone());
-            }
-        }
+    // 从JSON值中收集标量属性（数字、字符串、布尔值）
+    match v.as_object() {
+        // 如果值是JSON对象
+        Some(obj) => obj.iter()
+            // 过滤出标量字段（非对象/数组）
+            .filter(|(_, val)| is_scalar_field(val))
+            // 将键值对转换为(String, Value)元组
+            .map(|(k, val)| (k.clone(), val.clone())).collect(),
+        // 如果不是JSON对象，返回空哈希表
+        None => FnvHashMap::default(),
     }
-    scalar_attrs
 }
 
+// 获取父节点路径
+// 参数: node_path - 当前节点的完整路径字符串
+// 返回值: 父节点路径字符串，如果没有父节点则返回空字符串
 pub fn get_parent_node_path(node_path: &str) -> String {
     node_path.rsplit_once('/').map(|(parent, _)| parent.to_string()).unwrap_or_default()
 }

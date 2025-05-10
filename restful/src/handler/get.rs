@@ -19,20 +19,17 @@ pub async fn handle_get(db: &DBConn, body_map: HashMap<String, serde_json::Value
 }
 
 impl QueryContext {
-    async fn response(&mut self, db: &DBConn) ->  serde_json::Value {
+    async fn response(&mut self, db: &DBConn) -> serde_json::Value {
         // 克隆 query_node 以避免借用冲突
         let query_node = self.layer_query_node.clone();
 
-        // 遍历每个层级的节点
-        for (_, nodes) in query_node {
-            // 创建一个可变的克隆来进行排序
+        // 按层级遍历节点并处理
+        for nodes in query_node.values() {
+            // 按权重降序排序
             let mut sorted_nodes = nodes.clone();
-            // 节点排序, 权重高的先处理
-            sorted_nodes.sort_by(|a, b| b.borrow().weight.cmp(&a.borrow().weight));
-            // 查询每个节点的数据
+            sorted_nodes.sort_unstable_by(|a, b| b.borrow().weight.cmp(&a.borrow().weight));
             for node in sorted_nodes {
                 let mut node_rc = node.borrow_mut();
-                // 处理主节点
                 if node_rc.weight >= RATIO_PRIMARY {
                     self.query_primary_node(&mut *node_rc, db).await;
                 } else {
@@ -41,40 +38,45 @@ impl QueryContext {
             }
         }
 
-        // 构建结果
+        // 构建响应结果映射
         let mut response_map = HashMap::new();
+        // 遍历所有主节点数据（每个主节点路径及其对应的查询结果）
         for (node_path, results) in &self.primary_node_data {
+            // 获取当前主节点的引用
             let node_ref = self.query_node.get(node_path).unwrap().borrow();
-            let namespace = get_parent_node_path(&node_path);
-            let node_name = node_ref.name.clone();
-            let node_path = node_ref.path.clone();
+            // 获取命名空间（父节点路径）
+            let namespace = get_parent_node_path(node_path);
+            // 获取主节点名称
+            let node_name = &node_ref.name;
+            // 判断主节点是否为列表类型
             let is_list = node_ref.is_list;
-            let primary_relate_kv = self.primary_relate_kv.get(&node_path).cloned().unwrap_or_default();
+            // 获取主节点与从节点的关联字段映射关系
+            let primary_relate_kv = self.primary_relate_kv.get(node_path).cloned().unwrap_or_default();
+
             if is_list {
-                let primary_node_result_list = results.into_iter()
-                    .map(|result| self.build_primary_value(&namespace, &node_name, result, &primary_relate_kv))
-                    .collect::<Vec<_>>();
-                // 获取父级命名空间并插入结果列表
-                let namespace = get_parent_node_path(&node_path);
+                // 如果主节点是列表类型，遍历每个结果，构建主节点及其关联从节点的嵌套结构
+                let primary_node_result_list: Vec<_> = results.iter()
+                    .map(|result| self.build_primary_value(&namespace, node_name, result, &primary_relate_kv))
+                    .collect();
+                // 将结果列表插入到响应映射中，键为命名空间
                 response_map.insert(namespace, serde_json::json!(primary_node_result_list));
-            } else { // 处理单个节点
-                // 获取第一个结果或空映射表
+            } else {
+                // 如果主节点不是列表类型，取第一个结果（若无则用默认值）
                 let result = results.first().cloned().unwrap_or_default();
-                let primary_value = self.build_primary_value(&namespace, &node_name, &result, &primary_relate_kv);
+                // 构建主节点及其关联从节点的嵌套结构
+                let primary_value = self.build_primary_value(&namespace, node_name, &result, &primary_relate_kv);
+                // 将主节点及其关联从节点的所有键值对插入到响应映射中
                 for (key, value) in primary_value {
                     response_map.insert(key, value);
                 }
             }
         }
 
-        // 返回结果
-        let code = self.code;
-        let msg = self.err.clone();
-        build_rpc_value(code as u32, msg, response_map)
+        build_rpc_value(self.code as u32, self.err.clone(), response_map)
     }
 
-    fn build_primary_value(&self, namespace: &str, primary_node_name: &str, primary_node_record: &HashMap<String, serde_json::Value>,
-                           primary_relate_kv: &HashMap<String, String>) -> HashMap<String, serde_json::Value> {
+    fn build_primary_value(&self, namespace: &str, primary_node_name: &str, 
+                    primary_node_record: &HashMap<String, serde_json::Value>, primary_relate_kv: &HashMap<String, String>) -> HashMap<String, serde_json::Value> {
         let mut result_map = HashMap::<String, serde_json::Value>::new();
 
         // 主节点数据
@@ -126,111 +128,138 @@ impl QueryContext {
         result_map
     }
 
+    /// 获取从节点关联数据
+    ///
+    /// # 参数
+    /// * `slave_node_field_path` - 从节点字段路径，格式为"命名空间/字段名"
+    /// * `slave_node_field_value_key` - 从节点字段值键，格式为"字段名/字段值"
+    ///
+    /// # 返回值
+    /// 返回Option<serde_json::Value>，包含从节点数据的JSON值或None
     fn get_slave_node_data(&self, slave_node_field_path: &str, slave_node_field_value_key: &str) -> Option<serde_json::Value> {
-        let slave_node_path = get_parent_node_path(&slave_node_field_path);
-        let relate_field_data_opt = self.slave_node_relate_data.get(&slave_node_path)?.get(slave_node_field_value_key);
-        match relate_field_data_opt {
-            None => {
-                log::debug!("slave.data: {}.{} is empty", &slave_node_path, slave_node_field_value_key);
-                None
+        // 获取从节点路径（去除字段名部分）
+        let slave_node_path = get_parent_node_path(slave_node_field_path);
+        
+        // 链式操作获取从节点数据：
+        // 1. 首先从slave_node_relate_data获取路径对应的字段映射表
+        // 2. 然后从字段映射表获取指定键的值
+        // 3. 最后处理获取到的关联数据
+        self.slave_node_relate_data.get(&slave_node_path)
+            .and_then(|field_map| field_map.get(slave_node_field_value_key))
+            .and_then(|relate_field_data| {
+                // 检查从节点是否为列表类型
+                let is_list = self.query_node.get(&slave_node_path)?.borrow().is_list;
+                
+                if relate_field_data.is_empty() { // 记录空数据日志
+                    log::debug!("slave.data: {}.{} is empty", &slave_node_path, slave_node_field_value_key);
+                    None
+                } else if is_list { // 列表类型：直接序列化整个数组
+                    Some(serde_json::to_value(relate_field_data).unwrap())
+                } else { // 非列表类型：只取第一个元素序列化
+                    Some(serde_json::to_value(&relate_field_data[0]).unwrap())
+                }
             }
-            Some(relate_field_data) => {
-                if self.query_node.get(&slave_node_path).unwrap().borrow().is_list {
-                    Some(serde_json::to_value(relate_field_data.clone()).unwrap())
-                } else {
-                    Some(serde_json::to_value(relate_field_data[0].clone()).unwrap())
+        )
+    }
+
+    async fn query_primary_node(&mut self, node: &mut QueryNode, db: &DBConn) {
+        // 添加关联字段到查询列
+        if let Some(primary_relate_kv) = self.primary_relate_kv.get(&node.path) {
+            for (column, _) in primary_relate_kv {
+                node.sql_executor.add_column(column);
+            }
+        }
+
+        // 查询主节点数据
+        let Some(node_results) = self.query_node_data(node, db).await else { return };
+
+        // 保存查询结果
+        self.primary_node_data.insert(node.path.clone(), node_results.clone());
+
+        // 处理查询结果
+        if node.is_list {
+            self.process_list_results(node, node_results);
+        } else if let Some(result) = node_results.first() {
+            self.process_single_result(node, result);
+        }
+    }
+
+    // 处理列表类型结果
+    fn process_list_results(&mut self, node: &QueryNode, results: Vec<HashMap<String, serde_json::Value>>) {
+        for result in results {
+            for (k, v) in result {
+                let full_path = format!("{}/{}", node.path, k);
+                if let Some(entry) = self.primary_node_related_field_values.get_mut(&full_path) {
+                    match entry {
+                        serde_json::Value::Null => *entry = serde_json::Value::Array(vec![v]),
+                        serde_json::Value::Array(arr) => arr.push(v),
+                        _ => {}
+                    }
                 }
             }
         }
     }
 
-    async fn query_primary_node(&mut self, node: &mut QueryNode, db: &DBConn) {
-        // 被关联字段必须在查询字段列表中
-        let primary_relate_kv = self.primary_relate_kv.get(&node.path).cloned().unwrap_or_default();
-        for (column, _) in primary_relate_kv {
-            node.sql_executor.add_column(&column);
-        }
-        // 查询主节点数据
-        let result_opt = self.query_node_data(node, db).await;
-        match result_opt {
-            Some(node_results) => {
-                // 保存查询结果到节点数据映射表
-                self.primary_node_data.insert(node.path.clone(), node_results.clone());
-                // 处理列表类型节点的结果
-                if node.is_list {
-                    // 遍历列表中的每个结果项
-                    for result in node_results {
-                        for (k, v) in result {
-                            // 构建字段的完整路径
-                            let full_path = format!("{}/{}", node.path, k);
-                            // 更新关联字段值映射表
-                            if let Some(entry) = self.primary_node_related_field_values.get_mut(&full_path) {
-                                match entry {
-                                    // 如果当前值为空，创建新数组
-                                    serde_json::Value::Null => { *entry = serde_json::Value::Array(vec![v.clone()]); }
-                                    // 如果已经是数组，追加新值
-                                    serde_json::Value::Array(arr) => { arr.push(v.clone()); }
-                                    _ => {}
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // 处理单个节点的结果（非列表）
-                    if node_results.is_empty() { return; }
-                    // 获取第一个结果项
-                    let result = &node_results[0];
-                    // 更新关联字段值映射表
-                    for (k, v) in result {
-                        let full_path = format!("{}/{}", node.path, k);
-                        if let Some(existing_value_slot) = self.primary_node_related_field_values.get_mut(&full_path) {
-                            *existing_value_slot = v.clone();
-                        }
-                    }
-                }
+    // 处理单个结果
+    fn process_single_result(&mut self, node: &QueryNode, result: &HashMap<String, serde_json::Value>) {
+        for (k, v) in result {
+            let full_path = format!("{}/{}", node.path, k);
+            if let Some(existing_value_slot) = self.primary_node_related_field_values.get_mut(&full_path) {
+                *existing_value_slot = v.clone();
             }
-            None => { return; }
         }
     }
 
     async fn query_relate_node(&mut self, node: &mut QueryNode, db: &DBConn) {
-        // 依赖的主节点属性整理为 in 条件
+        // 获取当前节点的路径和关联字段映射关系
         let node_path = node.path.clone();
         let node_relate_kv = self.slave_relate_kv.get(&node_path).cloned().unwrap_or_default();
+
+        // 处理每个关联字段的查询条件
         for (field_name, primary_node_field_path) in &node_relate_kv {
-            match self.primary_node_related_field_values.get(primary_node_field_path) {
-                Some(value) => {
-                    if value.is_null() { return (); }
-                    // 克隆值，因为后续会使用它
-                    let cloned_value = value.clone();
-                    if let serde_json::Value::Array(array) = &cloned_value {
-                        node.sql_executor.page_size(serde_json::json!(0), serde_json::json!(array.len()));
-                    }
-                    // 处理 in 条件
-                    node.sql_executor.parse_condition(&field_name, &cloned_value);
+            // 从主节点获取关联字段的值
+            let value_opt = self.primary_node_related_field_values.get(primary_node_field_path);
+            if let Some(value) = value_opt {
+                // 如果值为空则直接返回
+                if value.is_null() {
+                    return;
                 }
-                None => { continue; }
+                // 如果是数组类型，设置分页大小为数组长度
+                if let serde_json::Value::Array(array) = value {
+                    node.sql_executor.page_size(serde_json::json!(0), serde_json::json!(array.len()));
+                }
+                // 解析查询条件
+                node.sql_executor.parse_condition(field_name, value);
+            } else {
+                continue;
             }
-            // 关联字段必须在查询字段列表中
-            node.sql_executor.add_column(&field_name);
+            // 确保关联字段在查询字段列表中
+            node.sql_executor.add_column(field_name);
         }
 
-        // 查询节点数据
-        let result_opt = self.query_node_data(node, db).await;
-        match result_opt {
-            Some(node_results) => {
-                for (field, _) in &node_relate_kv {
-                    let mut field_map = FnvHashMap::<String, Vec<HashMap<String, serde_json::Value>>>::default();
-                    for result in &node_results {
-                        let field_key = if field.ends_with("@") { field[..(field.len()-1)].to_string() } else { field.to_string() };
-                        let field_value = result.get(&field_key).unwrap();
-                        let field_path = format!("{}/{}", &field_key, field_value);
+        // 执行节点数据查询
+        if let Some(node_results) = self.query_node_data(node, db).await {
+            // 处理每个关联字段的查询结果
+            for (field, _) in &node_relate_kv {
+                let mut field_map = FnvHashMap::<String, Vec<HashMap<String, serde_json::Value>>>::default();
+                // 处理字段名后缀@的情况
+                let field_key = if field.ends_with('@') {
+                    &field[..field.len() - 1]
+                } else {
+                    field.as_str()
+                };
+                // 遍历查询结果，构建字段映射关系
+                for result in &node_results {
+                    if let Some(field_value) = result.get(field_key) {
+                        // 构建字段路径格式：字段名/字段值
+                        let field_path = format!("{}/{}", field_key, field_value);
+                        // 将结果存入字段映射表
                         field_map.entry(field_path).or_insert_with(Vec::new).push(result.clone());
                     }
-                    self.slave_node_relate_data.insert((&node.path).to_string(), field_map);
                 }
+                // 将字段映射表存入从节点关联数据
+                self.slave_node_relate_data.insert(node.path.clone(), field_map);
             }
-            None => { return; }
         }
     }
 
@@ -255,8 +284,7 @@ impl QueryContext {
                 let page = parent_node_attrs.get("page").cloned().unwrap_or_else(|| serde_json::json!(0));
                 let count = parent_node_attrs.get("count").cloned().unwrap_or_else(|| serde_json::json!(DEFAULT_MAX_COUNT));
                 node.sql_executor.page_size(page, count);
-            } else {
-                // 父节点不存在时使用默认分页参数
+            } else { // 父节点不存在时使用默认分页参数
                 node.sql_executor.page_size(serde_json::json!(0), serde_json::json!(DEFAULT_MAX_COUNT));
             }
         }
