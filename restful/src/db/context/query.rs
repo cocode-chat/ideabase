@@ -212,12 +212,6 @@ impl QueryContext {
     }
 }
 
-
-
-pub fn get_parent_node_path(node_path: &str) -> String {
-    node_path.rsplit_once('/').map(|(parent, _)| parent.to_string()).unwrap_or_default()
-}
-
 /// 判断是否为标量
 fn is_scalar_field(v: &serde_json::Value) -> bool { v.is_number() || v.is_string() || v.is_boolean() }
 
@@ -232,6 +226,10 @@ fn collect_scalar_attrs(v: &serde_json::Value) -> FnvHashMap<String, serde_json:
         }
     }
     scalar_attrs
+}
+
+pub fn get_parent_node_path(node_path: &str) -> String {
+    node_path.rsplit_once('/').map(|(parent, _)| parent.to_string()).unwrap_or_default()
 }
 
 #[cfg(test)]

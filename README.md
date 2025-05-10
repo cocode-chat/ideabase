@@ -5,7 +5,7 @@
   - [ ] Cache
   - [ ] Realtime subscriptions
 - [ ] Authentication + Authorization
-- [ ] AI + RAG
+- [ ] AI + RAG (base on DB and doc)
 - [ ] AI + MCP
 - [ ] File Storage
 - [ ] Dashboard

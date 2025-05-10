@@ -7,3 +7,9 @@ datasource:
   port: 3306
   username: root
   password: keke*de*2025
+
+# 向量数据库
+vector:
+  schema: http
+  host: 127.0.0.1
+  port: 6333

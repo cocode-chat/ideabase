@@ -4,7 +4,6 @@ use crate::mysql_binlog_listener::start_mysql_binlog_listener;
 pub mod mysql_binlog_listener;
 
 
-
 pub fn init_mysql_binlog_listener(datasource: DataSource) {
     let server_id = 100000;
     let binlog_filename = "mysql-bin.000001".to_string();

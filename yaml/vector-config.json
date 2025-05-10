@@ -1,0 +1,25 @@
+{
+  "ecommerce": {
+    "item": {
+      "table": "item",
+      "column": "id, name, description, category, price, stock",
+      "metadata": {
+        "id": "item_id",
+        "category": "category"
+      },
+      "limit": 1000
+    },
+    "order": {
+      "table": "order",
+      "column": "id, name, description, category, price, stock, @item_list",
+      "@item_list": {
+        "title": "item list",
+        "sql": "SELECT i.name as item_name, oi.quantity, oi.price_per_item FROM order_items oi JOIN item i ON oi.item_id = i.id WHERE oi.order_id = ?"
+      },
+      "limit": 1000,
+      "metadata": {
+        "id": "order_id"
+      }
+    }
+  }
+}
