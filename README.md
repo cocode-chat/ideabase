@@ -14,4 +14,4 @@
 - [ ] Dashboard
 
 # MySQL DB Restful API
-Please init [sql file](.doc/demo.sql) first. I will show 4 cases. then see [Restful](README-restful.md)) docs.
+Please init [sql file](.doc/demo.sql) first. I will show 4 cases. then see [Restful](README-restful.md) docs.
