@@ -18,8 +18,8 @@ async fn main() -> std::io::Result<()> {
     // 日志
     init_tk_log();
     // 数据源
-    let db = init_datasource_conn((&G_ENV).datasource.clone()).await;
-    G_DB.set(db).unwrap();
+    let db_conn = init_datasource_conn((&G_ENV).datasource.clone()).await.expect("datasource init error");
+    G_DB.set(db_conn).unwrap();
     // 实时数据库
     init_mysql_binlog_listener((&G_ENV).datasource.clone());
 
