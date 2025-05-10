@@ -1,5 +1,5 @@
-local:
-  cache_dir: /opt/cache/ideabase
+cache:
+  dir: /opt/cache/ideabase
 
 # 数据源
 datasource:

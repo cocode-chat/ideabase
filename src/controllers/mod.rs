@@ -22,6 +22,16 @@ pub fn register_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(api_scope);
 }
 
+
+pub fn configure_cors() -> actix_cors::Cors {
+    actix_cors::Cors::default()
+        .allowed_origin("https://ideabase.chat")
+        .allowed_methods(vec!["*"])
+        .allowed_headers(vec!["content-type"])
+        .supports_credentials()
+        .max_age(3600)
+}
+
 #[get("/health")]
 async fn health() -> impl Responder {
     return_rpc_result(StatusCode::OK.as_u16(), None, Some("I'm OK!"))

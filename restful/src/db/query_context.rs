@@ -2,7 +2,7 @@ use fnv::FnvHashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, VecDeque};
-use crate::db::executor::query_executor::QueryExecutor;
+use crate::db::query_executor::QueryExecutor;
 
 /// 主节点权重常量
 pub const RATIO_PRIMARY: i32 = 10000;
@@ -236,7 +236,7 @@ pub fn get_parent_node_path(node_path: &str) -> String {
 mod tests {
     use common::json::json_to_json_value;
     use common::utils::serde_json_map_to_hashmap;
-    use crate::db::context::query::QueryContext;
+    use crate::db::query_context::QueryContext;
 
     #[test]
     fn test_query_ctx() {

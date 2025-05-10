@@ -93,7 +93,7 @@ pub fn get_create_table_sql(table: &TableMeta) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::db::executor::create_executor::get_create_table_sql;
+    use crate::db::create_executor::get_create_table_sql;
     use database::common::TableMeta;
 
     const TABLE_META_JSON: &str = r#" {
