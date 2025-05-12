@@ -1,0 +1,13 @@
+[package]
+name = "storage"
+version = "1.0.0"
+edition = "2024"
+description = "ideabase storage"
+
+
+
+[dependencies]
+log = {  version = "0.4" }
+
+# file-storage
+rust-s3 = { version = "0.35" }

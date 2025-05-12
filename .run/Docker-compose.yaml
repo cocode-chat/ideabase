@@ -1,0 +1,42 @@
+services:
+  mysql:
+    container_name: mysql
+    image: arm64v8/mysql:9.3
+    restart: unless-stopped
+    environment:
+      - LANG=C.UTF-8
+      - MYSQL_ROOT_PASSWORD=ideabase2025
+      - MYSQL_CHARACTER_SET_SERVER=utf8mb4
+      - MYSQL_COLLATION_SERVER=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    command: --log_bin=mysql-bin --server-id=1 --character-set-server=utf8mb4
+    volumes:
+      - .sql-demo/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  qdrant:
+    container_name: qdrant
+    image: qdrant/qdrant:v1.14.0
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    environment:
+      - QDRANT__SERVICE__API_KEY=ideabase2025
+
+  ideabase:
+    container_name: ideabase
+    image: cc/ideabase:latest
+    ports:
+      - 8080:8080
+    restart: always
+    environment:
+      - TZ="Asia/Shanghai"
+    env_file:
+      - Docker-run-env.properties
+    depends_on:
+      - qdrant
+      - mysql
+    volumes:
+      - .docker/volume/cache:/opt/cache/ideabase
+      - .json-demo/vector.json:/app/yaml/vector.json

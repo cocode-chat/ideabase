@@ -1,0 +1,25 @@
+{
+  "ecommerce": {
+    "item": {
+      "database": "ecommerce",
+      "table": "item",
+      "column": "id, name, description, category, price, stock_quantity",
+      "metadata": {
+        "id": "item_id",
+        "category": "category"
+      }
+    },
+    "order": {
+      "database": "ecommerce",
+      "table": "order",
+      "column": "id, customer_id, order_date, status, total_amount, shipping_address, @item_list",
+      "metadata": {
+        "id": "order_id"
+      },
+      "@item_list": {
+        "title": "商品列表",
+        "sql": "SELECT oi.order_id as id, i.name as item_name, oi.quantity as quantity, oi.price_per_item as price_per_item FROM ecommerce.order_items oi JOIN ecommerce.item i ON oi.item_id = i.id WHERE oi.order_id IN (?id)"
+      }
+    }
+  }
+}

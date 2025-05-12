@@ -1,0 +1,34 @@
+[package]
+name = "ideabase"
+version = "0.1.0"
+edition = "2024"
+description = "a AI powered BaaS, 兼具安全与性能的国产Firebase！"
+authors = [
+    "ReliefZk <reliefzk@gmail.com>",
+]
+keywords = ["apijson", "firebase", "ai-baas", "ai-rag"]
+
+[workspace]
+members = ["common/core", "common/database", "restful", "realtime", "file-storage"]
+resolver = "2"
+
+[dependencies]
+common = { path = "common/core" }
+database = { path = "common/database" }
+restful = { path = "restful" }
+realtime = { path = "realtime" }
+rag = { path = "ai-rag" }
+storage = { path = "file-storage" }
+
+log = {  version = "0.4" }
+lazy_static = { version = "1"}
+once_cell = { version = "1.21" }
+serde_json = { version = "1.0" }
+serde = { version = "1.0", features = ["derive"] }
+
+# web
+http = {version = "0.2"}
+actix-cors = { version = "0.7" }
+actix-web = { version = "4.10" }
+
+tokio = { version = "1.44", features = ["full"]}
