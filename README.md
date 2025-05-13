@@ -1,6 +1,6 @@
 ![Ideabase](.doc/logo.jpg)
 
-[Ideabase](https://github.com/cocode-chat/ideabase) 是AI时代的Firebase，业务智能体的基础设施，让业务数据自然生长出智能，从“数据拥有”转向“数据智能”。
+[Ideabase](https://github.com/cocode-chat/ideabase) 是AI时代的Firebase，企业智能体的基础设施，让业务数据自然生长出智能，从“数据拥有”转向“数据智能”。
 
 我们正在使用企业级开源工具和Rust编程语言构建Ideabase的功能，它提供了类似Firebase的能力，但具有更强大的安全性和顶级性能。
 
