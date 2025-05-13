@@ -1,4 +1,4 @@
-![Ideabase](.doc/logo.png)
+![Ideabase](.doc/logo.jpg)
 
 [Ideabase](https://github.com/cocode-chat/ideabase) 是AI时代的Firebase，业务智能体的基础设施，让业务数据自然生长出智能，从“数据拥有”转向“数据智能”。
 
