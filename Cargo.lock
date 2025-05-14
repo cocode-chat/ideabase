@@ -537,6 +537,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "auth"
+version = "0.1.0"
+dependencies = [
+ "common",
+ "log",
+ "tokio",
+ "tokio-test",
+]
+
+[[package]]
 name = "auto_enums"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -981,7 +991,7 @@ dependencies = [
 
 [[package]]
 name = "common"
-version = "1.0.0"
+version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
  "figment",
@@ -1220,7 +1230,7 @@ dependencies = [
 
 [[package]]
 name = "database"
-version = "1.0.0"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "common",
@@ -2330,6 +2340,7 @@ version = "0.1.0"
 dependencies = [
  "actix-cors",
  "actix-web",
+ "auth",
  "common",
  "database",
  "http 0.2.12",
@@ -3530,7 +3541,7 @@ checksum = "dc33ff2d4973d518d823d61aa239014831e521c75da58e3df4840d3f47749d09"
 
 [[package]]
 name = "rag"
-version = "1.0.0"
+version = "0.1.0"
 dependencies = [
  "common",
  "database",
@@ -3618,7 +3629,7 @@ dependencies = [
 
 [[package]]
 name = "realtime"
-version = "1.0.0"
+version = "0.1.0"
 dependencies = [
  "common",
  "log",
@@ -3797,7 +3808,7 @@ dependencies = [
 
 [[package]]
 name = "restful"
-version = "1.0.0"
+version = "0.1.0"
 dependencies = [
  "common",
  "database",
@@ -4677,7 +4688,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "storage"
-version = "1.0.0"
+version = "0.1.0"
 dependencies = [
  "log",
  "rust-s3",

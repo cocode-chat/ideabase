@@ -15,9 +15,10 @@ resolver = "2"
 [dependencies]
 common = { path = "common/core" }
 database = { path = "common/database" }
+auth = { path = "auth" }
+rag = { path = "ai-rag" }
 restful = { path = "restful" }
 realtime = { path = "realtime" }
-rag = { path = "ai-rag" }
 storage = { path = "file-storage" }
 
 log = {  version = "0.4" }

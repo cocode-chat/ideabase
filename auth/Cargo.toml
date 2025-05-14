@@ -1,8 +1,8 @@
 [package]
-name = "realtime"
+name = "auth"
 version = "0.1.0"
 edition = "2024"
-description = "ideabase realtime module"
+description = "ideabase auth module"
 
 [dependencies]
 common = { path = "../common/core" }
@@ -10,8 +10,6 @@ common = { path = "../common/core" }
 log = {  version = "0.4" }
 tokio = { version = "1.44", features = ["full"]}
 
-# binlog
-mysql-binlog-connector-rust = { version = "0.3"}
 
 [dev-dependencies]
 tokio-test = "0.4"
