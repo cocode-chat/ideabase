@@ -1,10 +1,18 @@
 ![Ideabase](.doc/logo.jpg)
 
-[Ideabase](https://github.com/cocode-chat/ideabase) 是AI时代的Firebase，企业智能体的基础设施，让业务数据自然生长出智能，从“数据拥有”转向“数据智能”。
+[Ideabase](https://github.com/cocode-chat/ideabase) - AI时代的企业级智能体基础设施
 
-我们正在使用企业级开源工具和Rust编程语言构建Ideabase的功能，它提供了类似Firebase的能力，但具有更强大的安全性和顶级性能。
+Ideabase作为AI时代的Firebase替代方案，为企业智能体提供强大的数据支撑平台。我们致力于让业务数据"自然生长"出智能，帮助企业从传统的"数据拥有"模式向"数据智能"模式转型升级。
 
-我们还可以通过简单的配置使您的数据库具有AI知识库功能，使其能够支持AI驱动的对话以满足您的业务需求，基于此可以研发适用于个性化智能客服智能体和以企业业务数据为中心的智能体。
+基于企业级开源工具和Rust编程语言构建，Ideabase不仅提供类似Firebase的核心功能，更在以下方面实现突破：
+- 企业级安全防护机制
+- 极致性能优化
+- 原生AI能力集成
+
+通过简单的配置，您的数据库即可升级为智能体平台：
+- 支持AI驱动的自然语言交互
+- 赋能个性化智能客服系统开发
+- 构建以企业数据为核心的业务智能体
 
 - [x] Hosted MySQL Database.
   - [x] REST
@@ -20,7 +28,7 @@
 - [ ] Dashboard
 
 # Install
-注意替换 [LLM api key](.run/Docker-run-env.properties) 中的EMBEDDING_API_KEY,CONVERSATION_API_KEY
+注意替换 [LLM api key](.run/Docker-run-env.properties) 中的EMBEDDING_API_KEY, CONVERSATION_API_KEY
 ```shell
 git clone git@github.com:cocode-chat/ideabase.git
 cd ideabase
@@ -30,9 +38,11 @@ sh .run/Docker-compose.sh
 # MySQL DB RESTful API 
 See [RESTful](.doc/README-restful.md) docs.
 
-这里需要感谢腾讯开源的[APIJSON](http://apijson.cn/)项目，它的协议设计我们很喜欢并兼容使用。
+这里特别感谢腾讯开源的[APIJSON](http://apijson.cn/)项目，我们高度认可其协议设计并保持兼容。
 
-但APIJSON是深度优先遍历节点，会导致过多的数据库IO。而Ideabase采用广度优先遍历节点合并子查询，减少数据库IO。当然这也导致目前代码看起来比较丑陋。
+与APIJSON采用的深度优先遍历节点不同，Ideabase创新性地实现了广度优先遍历节点合并子查询技术，这一优化显著减少了数据库IO操作。虽然当前实现代码在美观度上还有提升空间，但性能优势已经得到验证。
+
+尤为重要的是，我们成功实现了跨库关联查询功能，这一特性对于资源受限的项目具有极高的实用价值，能够大幅提升开发效率。
 
 # RAG base on hosted database
 See [RAG](.doc/README-rag.md) docs.
