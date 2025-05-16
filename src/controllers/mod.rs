@@ -1,6 +1,6 @@
 pub mod rag_controller;
 pub mod restful_controller;
-
+pub mod account_controller;
 
 use actix_web::{get, http::StatusCode, web, HttpResponse, Responder};
 use common::rpc::RpcResult;
@@ -12,6 +12,19 @@ pub fn return_rpc_result<T: serde::Serialize>(code: u16, msg: Option<String>, da
     HttpResponse::Ok().json(RpcResult{code, msg, data})
 }
 
+pub fn configure_cors() -> actix_cors::Cors {
+    actix_cors::Cors::default()
+        .allowed_origin("https://ideabase.io")
+        .allowed_methods(vec!["*"])
+        .allowed_headers(vec!["content-type"])
+        .supports_credentials()
+        .max_age(3600)
+}
+
+#[get("/health")]
+async fn health() -> impl Responder {
+    return_rpc_result(StatusCode::OK.as_u16(), None, Some("I'm OK!"))
+}
 
 pub fn register_routes(cfg: &mut web::ServiceConfig) {
     //health
@@ -25,17 +38,3 @@ pub fn register_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(api_scope);
 }
 
-
-pub fn configure_cors() -> actix_cors::Cors {
-    actix_cors::Cors::default()
-        .allowed_origin("https://ideabase.chat")
-        .allowed_methods(vec!["*"])
-        .allowed_headers(vec!["content-type"])
-        .supports_credentials()
-        .max_age(3600)
-}
-
-#[get("/health")]
-async fn health() -> impl Responder {
-    return_rpc_result(StatusCode::OK.as_u16(), None, Some("I'm OK!"))
-}

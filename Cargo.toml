@@ -15,7 +15,6 @@ resolver = "2"
 [dependencies]
 common = { path = "common/core" }
 database = { path = "common/database" }
-auth = { path = "auth" }
 rag = { path = "ai-rag" }
 restful = { path = "restful" }
 realtime = { path = "realtime" }
@@ -24,12 +23,17 @@ storage = { path = "file-storage" }
 log = {  version = "0.4" }
 lazy_static = { version = "1"}
 once_cell = { version = "1.21" }
+jsonwebtoken = { version = "9" }
+
 serde_json = { version = "1.0" }
 serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.44", features = ["full"]}
 
 # web
 http = {version = "0.2"}
 actix-cors = { version = "0.7" }
 actix-web = { version = "4.10" }
 
-tokio = { version = "1.44", features = ["full"]}
+# sqlx
+sqlx = { version = "0.8", features = ["mysql"] }
+sea-orm = { version = "1.1", features = [ "runtime-async-std-native-tls", "sqlx-mysql", "debug-print"]  }

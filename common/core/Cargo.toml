@@ -4,15 +4,13 @@ version = "0.1.0"
 edition = "2024"
 description = "ideabase common module"
 
-
 [dependencies]
 log = {  version = "0.4" }
 tklog = { version = "0.2" }
 lazy_static = { version = "1"}
 figment = { version = "0.10", features = ["yaml"] }
-
-# uuid
 rustflake = { version = "0.1" }
+argon2 = { version = "0.5", default-features = false, features = ["std", "alloc", "password-hash", "rand"] }
 
 # json
 serde_json = { version = "1.0" }

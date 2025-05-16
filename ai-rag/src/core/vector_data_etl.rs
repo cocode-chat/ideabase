@@ -490,7 +490,6 @@ fn format_content(record: &HashMap<String, Value>, ignore_fields: &Vec<String>, 
 mod tests {
     use serde_json::Value;
     use common::log::init_tk_log;
-    use common::yaml::{DsConfig};
     use database::core::DBConn;
     use crate::core::vector::init_vector_store;
     use crate::core::vector_data_etl::init_collection_documents;
@@ -518,7 +517,7 @@ mod tests {
             init_vector_store(collection_name).await;
 
             if let Ok(mysql_url) = std::env::var("MYSQL_URL") {
-                let db_conn = DBConn::new(DsConfig { url: mysql_url }).await.unwrap();
+                let db_conn = DBConn::new(&mysql_url).await.unwrap();
                 init_collection_documents(&db_conn, collection_name, source_type, data_config).await;
             } else {
                 eprintln!("Error getting MySQL_URL");

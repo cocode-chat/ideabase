@@ -20,5 +20,8 @@ serde_json = { version = "1.0" }
 serde = { version = "1.0", features = ["derive"] }
 
 # database
-sqlx = { version = "0.8", features = ["runtime-tokio-native-tls", "chrono", "mysql", "rust_decimal"] }
+sqlx = { version = "0.8", features = ["mysql"] }
+# sea-orm = { version = "1.1", features = [ "runtime-async-std-native-tls", "sqlx-mysql", "chrono", "rust_decimal", "debug-print"]  }
+
+[dev-dependencies]
 tokio-test = "0.4"

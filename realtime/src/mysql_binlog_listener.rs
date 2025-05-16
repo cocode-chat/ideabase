@@ -1,6 +1,5 @@
 use tokio::task::JoinHandle;
 use mysql_binlog_connector_rust::{binlog_client::BinlogClient, event::event_data::EventData};
-use common::yaml::DsConfig;
 
 /// 监听 MySQL 的 binlog 变更
 /// 
@@ -11,17 +10,17 @@ use common::yaml::DsConfig;
 /// * `data_source` - 数据库连接信息，包含用户名、密码、主机等
 /// * `server_id` - 连接 MySQL 时使用的服务器 ID，需要唯一标识客户端
 /// * `binlog_filename` - 要读取的 binlog 文件名，如 "mysql-bin.000001"
-pub fn start_mysql_binlog_listener(data_source: DsConfig, server_id: u64, binlog_filename: &str) -> JoinHandle<()> {
+pub fn start_mysql_binlog_listener(mysql_jdbc: String, server_id: u64, binlog_filename: &str) -> JoinHandle<()> {
     let binlog_filename = binlog_filename.to_string();
     tokio::spawn(async move {
-        read_mysql_binlog(data_source, server_id, &binlog_filename).await;
+        read_mysql_binlog(mysql_jdbc, server_id, &binlog_filename).await;
     })
 }
 
-async fn read_mysql_binlog(ds: DsConfig, server_id: u64, binlog_filename: &str) {
+async fn read_mysql_binlog(mysql_jdbc: String, server_id: u64, binlog_filename: &str) {
     let mut binlog_client = BinlogClient {
         server_id,
-        url: ds.url,
+        url: mysql_jdbc,
         binlog_filename: binlog_filename.to_string(),
         binlog_position: 0,
         gtid_enabled: false,

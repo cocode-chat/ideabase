@@ -1,7 +1,9 @@
 mod controllers;
+pub mod global;
+pub mod service;
 
 use common::log::init_tk_log;
-use common::yaml::{load_env_yaml, DsConfig, GlobalEnv};
+use common::yaml::{load_env_yaml, GlobalEnv};
 use database::{init_datasource_conn, core::DBConn};
 use rag::handler::etl_handler::init_vector_db;
 
@@ -20,14 +22,12 @@ async fn main() -> std::io::Result<()> {
 
     // 数据源
     if let Ok(mysql_url) = std::env::var("MYSQL_URL") {
-        let datasource = DsConfig { url: mysql_url };
-        let db_conn = init_datasource_conn(datasource.clone()).await.expect("datasource init error");
+        let db_conn = init_datasource_conn(&mysql_url).await.expect("datasource init error");
         G_DB.set(db_conn).unwrap();
         
         // 实时数据 - 在单独的线程中执行
-        // let ds_clone = datasource.clone();
         // tokio::spawn(async move {
-        //     init_mysql_binlog_listener(ds_clone);
+        //     init_mysql_binlog_listener(&mysql_url);
         // });
         
         // 向量数据库 - 在单独的线程中执行
