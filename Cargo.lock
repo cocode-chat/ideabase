@@ -1285,6 +1285,7 @@ dependencies = [
  "fnv",
  "lazy_static",
  "log",
+ "sea-orm",
  "serde",
  "serde_json",
  "sqlx",
