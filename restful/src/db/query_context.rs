@@ -98,9 +98,10 @@ impl QueryContext {
                         }
                     );
                 }
-            } else {
-                // 处理普通节点：直接加入队列，深度为1
-                json_vec_deque.push_back((String::new(), key.clone(), val.clone(), 1));
+            } else { // 处理普通节点：直接加入队列，深度为1
+                if let Some(_) = val.as_object() {
+                    json_vec_deque.push_back((String::new(), key.clone(), val.clone(), 1));
+                }
             }
         }
 
