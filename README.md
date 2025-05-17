@@ -1,6 +1,6 @@
 ![Ideabase](.doc/logo.jpg)
 
-[Ideabase](https://github.com/cocode-chat/ideabase) - AI时代的Firebase, 专注于让每个应用自然生长出智能对话框。
+[Ideabase](https://github.com/cocode-chat/ideabase) - AI时代的Firebase, 专注于让每个应用(web,app,miniapp)自然生长出智能对话框。
 
 提供三大核心组件
 - AI智能体服务
@@ -12,16 +12,29 @@
 ## 核心概念
 ### AI时代的BaaS
 BaaS平台：提供数据库、存储、身份验证、云函数等一站式后端服务，节省基础架构搭建和维护成本。
-Firebase是Google推出的领先BaaS平台，其产品线包括 Realtime Database、Cloud Firestore、Authentication、Cloud Functions等 。
-Ideabase在此基础上，深入打通AI智能体，提升数据库对话能力。
+Firebase是Google推出的领先BaaS平台，其产品线包括 Realtime Database、Cloud Firestore、Authentication、Functions等基础服务。
+Ideabase在Firebase基础上实现了三大AI能力突破：
+1. **业务知识中枢**：将数据库转化为领域知识库，使智能体具备业务专家级认知
+2. **业务智能体专家**：基于真实业务数据训练，可：
+   - 深度理解业务逻辑和领域知识
+   - 自动完成业务场景的复杂决策
+   - 提供符合行业规范的专家建议
+3. **智能体成长系统**：
+   - 持续从业务数据中学习演进
+   - 支持多模态业务交互（工单/合同/报表等）
+   - 形成可复用的领域知识图谱
 
-### 智能体
-智能体（AI Agent）：能够自主理解多模态输入、调用工具链，并完成复杂任务的智能体。
-功能调度：智能体可根据业务逻辑动态选用数据库查询、外部API调用或内置函数，大幅简化前端与AI交互的难度。
+这些能力使Ideabase成为首个实现"业务智能体专家化"的BaaS平台。
 
 ### 应用对话组件
-组件化引入：提供预制的对话窗口、消息气泡、回话历史等UI组件，支持Web、桌面、移动端、小程序等多平台。
-可定制样式：支持主题、皮肤、布局自定义，满足不同品牌与交互需求。
+通过简单引入对应平台组件即可获得完整智能体对话能力：
+- **即插即用**：只需几行代码即可集成预制对话组件
+- **多平台支持**：提供Web、桌面、移动端、小程序等全平台组件
+  - 对话窗口
+  - 消息气泡
+  - 会话历史
+- **智能体集成**：自动连接ideabase的智能体服务，无需额外配置
+- **深度定制**：支持主题、皮肤、布局自定义，满足品牌个性化需求
 
 ## 功能进度
 - [x] Hosted MySQL Database.
