@@ -11,8 +11,9 @@
 
 ## 核心概念
 ### AI时代的BaaS
-BaaS平台：提供数据库、存储、身份验证、云函数等一站式后端服务，节省基础架构搭建和维护成本。
+    BaaS平台：提供数据库、存储、身份验证、云函数等一站式后端服务，节省基础架构搭建和维护成本。
 Firebase是Google推出的领先BaaS平台，其产品线包括 Realtime Database、Cloud Firestore、Authentication、Functions等基础服务。
+
 Ideabase在Firebase基础上实现了三大AI能力突破：
 1. **业务知识中枢**：将数据库转化为领域知识库，使智能体具备业务专家级认知
 2. **业务智能体专家**：基于真实业务数据训练，可：
