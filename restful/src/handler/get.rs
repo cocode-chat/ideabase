@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use fnv::FnvHashMap;
+use http::StatusCode;
+use common::rpc::RpcResult;
 use database::core::DBConn;
 use crate::db::query_executor::DEFAULT_MAX_COUNT;
-use crate::handler::build_rpc_value;
 use crate::db::query_context::{get_parent_node_path, QueryContext, QueryNode, RATIO_PRIMARY};
 use crate::utils::transform::transform_salve_value;
 
@@ -13,13 +14,13 @@ use crate::utils::transform::transform_salve_value;
 ///
 /// # 返回值
 /// 返回serde_json::Value类型的JSON响应数据
-pub async fn handle_get(db: &DBConn, body_map: HashMap<String, serde_json::Value>) -> serde_json::Value {
+pub async fn handle_get(db: &DBConn, body_map: HashMap<String, serde_json::Value>) -> RpcResult::<HashMap<String, serde_json::Value>> {
     let mut ctx = QueryContext::from_json(body_map);
     ctx.response(db).await
 }
 
 impl QueryContext {
-    async fn response(&mut self, db: &DBConn) -> serde_json::Value {
+    async fn response(&mut self, db: &DBConn) -> RpcResult::<HashMap<String, serde_json::Value>> {
         // 克隆 query_node 以避免借用冲突
         let query_node = self.layer_query_node.clone();
 
@@ -39,7 +40,7 @@ impl QueryContext {
         }
 
         // 构建响应结果映射
-        let mut response_map = HashMap::new();
+        let mut response_payload = HashMap::new();
         // 遍历所有主节点数据（每个主节点路径及其对应的查询结果）
         for (node_path, results) in &self.primary_node_data {
             // 获取当前主节点的引用
@@ -59,7 +60,7 @@ impl QueryContext {
                     .map(|result| self.build_primary_value(&namespace, node_name, result, &primary_relate_kv))
                     .collect();
                 // 将结果列表插入到响应映射中，键为命名空间
-                response_map.insert(namespace, serde_json::json!(primary_node_result_list));
+                response_payload.insert(namespace, serde_json::json!(primary_node_result_list));
             } else {
                 // 如果主节点不是列表类型，取第一个结果（若无则用默认值）
                 let result = results.first().cloned().unwrap_or_default();
@@ -67,25 +68,26 @@ impl QueryContext {
                 let primary_value = self.build_primary_value(&namespace, node_name, &result, &primary_relate_kv);
                 // 将主节点及其关联从节点的所有键值对插入到响应映射中
                 for (key, value) in primary_value {
-                    response_map.insert(key, value);
+                    response_payload.insert(key, value);
                 }
             }
         }
 
-        build_rpc_value(self.code as u32, self.err.clone(), response_map)
+        let status_code = self.code;
+        let err_msg = &self.err_msg;
+        RpcResult::<HashMap<String, serde_json::Value>>{ code: status_code, msg: err_msg.to_owned(), payload: Some(response_payload) }
     }
 
-    fn build_primary_value(&self, namespace: &str, primary_node_name: &str, 
-                    primary_node_record: &HashMap<String, serde_json::Value>, primary_relate_kv: &HashMap<String, String>) -> HashMap<String, serde_json::Value> {
+    fn build_primary_value(&self, namespace: &str, primary_node_name: &str, primary_node_data: &HashMap<String, serde_json::Value>, primary_relate_kv: &HashMap<String, String>) -> HashMap<String, serde_json::Value> {
         let mut result_map = HashMap::<String, serde_json::Value>::new();
 
         // 主节点数据
-        result_map.insert(primary_node_name.to_string(), serde_json::to_value(primary_node_record.clone()).unwrap());
+        result_map.insert(primary_node_name.to_string(), serde_json::to_value(primary_node_data.clone()).unwrap());
 
         // 从节点数据
         for (primary_field, slave_node_field_path) in primary_relate_kv {
             // 获取主节点中关联字段的值，用于查询从节点数据
-            let primary_field_value = primary_node_record.get(primary_field).unwrap();
+            let primary_field_value = primary_node_data.get(primary_field).unwrap();
             // 从路径中提取从节点字段名称（取最后一个斜杠后的部分）
             let slave_node_field = slave_node_field_path.split("/").last().unwrap();
             // 构建从节点字段值的键，格式为"字段名/字段值"
@@ -292,8 +294,8 @@ impl QueryContext {
         match node.sql_executor.exec(db).await {
             Ok(results) => { Some(results) },
             Err(e) => { // 保存错误信息到上下文
-                self.err = Some(e.to_string());
-                self.code = 400;
+                self.err_msg = Some(e.to_string());
+                self.code = StatusCode::INTERNAL_SERVER_ERROR;
                 None
             }
         }

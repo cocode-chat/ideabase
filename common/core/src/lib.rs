@@ -3,3 +3,4 @@ pub mod rpc;
 pub mod json;
 pub mod yaml;
 pub mod utils;
+pub mod passwd;

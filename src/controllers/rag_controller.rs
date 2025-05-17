@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
-use actix_web::{post, web, HttpResponse, Responder};
+use actix_web::{post, web, Responder};
+use http::StatusCode;
 use common::rpc::RpcResult;
 use rag::handler::conversation_handler::conversation_call;
 use rag::handler::retriever_handler::similarity_search;
+use crate::controllers::build_rpc_response;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Conversation {
@@ -18,10 +20,10 @@ pub async fn conversation(request_data: web::Json<Conversation>) -> impl Respond
     let answer = conversation_call(&message, &collection_name).await;
     match answer {
         Ok(answer) => {
-            HttpResponse::Ok().json(RpcResult { code: 200, msg: None, data: Some(answer) })
+            build_rpc_response(RpcResult { code: StatusCode::OK, msg: None, payload: Some(answer) })
         }
         Err(err) => {
-            HttpResponse::Ok().json(RpcResult { code: 500, msg: Some(err.to_string()), data: Some(serde_json::Value::Null) })
+            build_rpc_response(RpcResult { code: StatusCode::INTERNAL_SERVER_ERROR, msg: Some(err), payload: None})
         }
     }
 }
@@ -34,13 +36,10 @@ pub async fn recall(request_data: web::Json<Conversation>) -> impl Responder {
     let result = similarity_search(&message, &collection_name).await;
     match result {
         Ok(docs) => {
-            for doc in &docs {
-                println!("doc: {}", serde_json::to_string_pretty(&doc).unwrap());
-            }
-            HttpResponse::Ok().json(RpcResult { code: 200, msg: None, data: Some(docs) })
+            build_rpc_response(RpcResult { code: StatusCode::OK, msg: None, payload: Some(docs) })
         }
         Err(err) => {
-            HttpResponse::Ok().json(RpcResult { code: 500, msg: Some(err.to_string()), data: Some(serde_json::Value::Null) })
+            build_rpc_response(RpcResult { code: StatusCode::INTERNAL_SERVER_ERROR, msg: Some(err), payload: None})
         }
     }
 }

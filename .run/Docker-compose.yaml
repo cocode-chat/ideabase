@@ -1,17 +1,23 @@
 services:
   mysql:
     container_name: mysql
-    image: arm64v8/mysql:9.3
+    image: mysql:9.3.0
     restart: unless-stopped
+    ports:
+      - "3306:3306"
     environment:
       - LANG=C.UTF-8
+      - TZ=Asia/Shanghai
       - MYSQL_ROOT_PASSWORD=ideabase2025
       - MYSQL_CHARACTER_SET_SERVER=utf8mb4
       - MYSQL_COLLATION_SERVER=utf8mb4_unicode_ci
-    ports:
-      - "3306:3306"
-    command: --log_bin=mysql-bin --server-id=1 --character-set-server=utf8mb4
+    command:
+      - --log_bin=mysql-bin
+      - --server-id=1
+      - --character-set-server=utf8mb4
     volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
       - .sql-demo/init.sql:/docker-entrypoint-initdb.d/init.sql
 
   qdrant:
@@ -22,7 +28,11 @@ services:
       - "6333:6333"
       - "6334:6334"
     environment:
+      - TZ=Asia/Shanghai
       - QDRANT__SERVICE__API_KEY=ideabase2025
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
 
   ideabase:
     container_name: ideabase
@@ -31,12 +41,14 @@ services:
       - 8080:8080
     restart: always
     environment:
-      - TZ="Asia/Shanghai"
+      - TZ=Asia/Shanghai
     env_file:
       - Docker-run-env.properties
     depends_on:
       - qdrant
       - mysql
     volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
       - .docker/volume/cache:/opt/cache/ideabase
       - .json-demo/vector.json:/app/yaml/vector.json

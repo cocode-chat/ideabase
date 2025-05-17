@@ -2,6 +2,7 @@ use fnv::FnvHashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, VecDeque};
+use http::StatusCode;
 use crate::db::query_executor::QueryExecutor;
 
 /// 主节点权重常量
@@ -13,9 +14,9 @@ const RATIO_RELATED: i32 = 10;
 #[derive(Debug)]
 pub struct QueryContext {
     // 状态码
-    pub code: i32,
+    pub code: StatusCode,
     // 错误信息
-    pub err: Option<String>,
+    pub err_msg: Option<String>,
 
     // 主节点字段映射表(主节点路径 -> 主节点字段 -> 指向从节点关联字段路径)
     pub primary_relate_kv: FnvHashMap<String, HashMap<String, String>>,
@@ -97,9 +98,10 @@ impl QueryContext {
                         }
                     );
                 }
-            } else {
-                // 处理普通节点：直接加入队列，深度为1
-                json_vec_deque.push_back((String::new(), key.clone(), val.clone(), 1));
+            } else { // 处理普通节点：直接加入队列，深度为1
+                if let Some(_) = val.as_object() {
+                    json_vec_deque.push_back((String::new(), key.clone(), val.clone(), 1));
+                }
             }
         }
 
@@ -165,7 +167,7 @@ impl QueryContext {
             }
         }
 
-        let mut ctx = QueryContext { code: 0, err: None,
+        let mut ctx = QueryContext { code: StatusCode::OK, err_msg: None,
             layer_query_node,
             namespace_node,
             query_node,

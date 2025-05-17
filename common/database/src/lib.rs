@@ -1,13 +1,14 @@
 pub mod core;
 
 
+
+
 use sqlx::Row;
-use ::common::yaml::DsConfig;
 use crate::core::DBConn;
 
 // 初始化数据库连接池
-pub async fn init_datasource_conn(data_source: DsConfig) -> Result<DBConn, sqlx::Error> {
-    DBConn::new(data_source).await
+pub async fn init_datasource_conn(url: &str) -> Result<DBConn, sqlx::Error> {
+    DBConn::new(url).await
 }
 
 // 数据库元数据

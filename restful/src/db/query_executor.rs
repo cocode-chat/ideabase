@@ -32,7 +32,7 @@ impl QueryExecutor {
     pub async fn exec(&self, db: &DBConn) -> Result<Vec<HashMap<String, serde_json::Value>>, sqlx::Error> {
         let sql = self.to_sql();
         log::info!("sql.exec: {}, params: {}", sql, serde_json::to_string(&self.params).unwrap());
-        let string_params: Vec<String> = self.params.iter()
+        let params: Vec<String> = self.params.iter()
             .map(|v| match v {
                 serde_json::Value::Null => "NULL".to_string(),
                 serde_json::Value::String(s) => s.clone(),
@@ -41,7 +41,7 @@ impl QueryExecutor {
                 _ => v.to_string(),
             })
             .collect();
-        db.query_list(&sql, string_params).await
+        db.query_list(&sql, params).await
     }
 
     pub fn to_sql(&self) -> String {

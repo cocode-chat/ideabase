@@ -3,9 +3,7 @@ use std::sync::RwLock;
 use std::collections::HashMap;
 use fnv::FnvHashMap;
 use sqlx::{mysql::{MySqlColumn, MySqlRow, MySqlPool}, Column, Row, TypeInfo, types::Decimal};
-
 use common::utils::base64_encode;
-use common::yaml::DsConfig;
 use crate::{ColumnMeta, DbMeta, TableMeta};
 
 lazy_static! {
@@ -23,8 +21,8 @@ pub struct DBConn {
 }
 
 impl DBConn {
-    pub async fn new(ds: DsConfig) -> Result<Self, sqlx::Error> {
-        let pool = MySqlPool::connect(&ds.url).await?;
+    pub async fn new(url: &str) -> Result<Self, sqlx::Error> {
+        let pool = MySqlPool::connect(url).await?;
         let mut ds = Self { pool };
         ds.init().await?;
         Ok(ds)

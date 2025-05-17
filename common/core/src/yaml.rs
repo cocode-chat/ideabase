@@ -35,6 +35,8 @@ pub fn load_env_json(json_file: &str) -> serde_json::Value {
 pub struct GlobalEnv {
     // 缓存配置
     pub cache: Cache,
+    // jwt配置
+    pub jwt: Jwt,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -43,8 +45,9 @@ pub struct Cache {
     pub dir: String,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct DsConfig {
-    // mysql://{username}:{passwd}@{host}:{port}?charset=utf8mb4
-    pub url: String,
+pub struct Jwt {
+    // jwt secret
+    pub secret: String,
+    // jwt expire hour
+    pub expire_hour: u32,
 }
-

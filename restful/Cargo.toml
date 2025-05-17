@@ -1,6 +1,6 @@
 [package]
 name = "restful"
-version = "1.0.0"
+version = "0.1.0"
 edition = "2024"
 description = "ideabase restful api"
 
@@ -11,6 +11,7 @@ database = { path = "../common/database" }
 
 log = {  version = "0.4" }
 fnv = { version = "1.0" }
+http = { version = "0.2" }
 serde_json = { version = "1.0" }
 
 # database
