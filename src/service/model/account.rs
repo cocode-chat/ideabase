@@ -18,6 +18,8 @@ pub struct Account {
     pub password: String,
     /// 用户角色(admin/user等)
     pub role: String,
+    /// 用户API密钥
+    pub api_key: Option<String>,
     /// 邮箱确认时间
     pub email_confirmed_at: Option<String>,
     /// 最后登录时间
@@ -34,6 +36,7 @@ pub struct AccountDTO {
     pub phone: Option<String>,
     pub password: Option<String>,
     pub role: Option<String>,
+    pub api_key: Option<String>,
     pub email_confirmed_at: Option<String>,
     pub last_sign_in_at: Option<String>,
     pub gmt_create: Option<String>,
@@ -54,6 +57,7 @@ impl Account {
             ("phone", &dto.phone),
             ("password", &dto.password),
             ("role", &dto.role),
+            ("api_key", &dto.api_key),
             ("email_confirmed_at", &dto.email_confirmed_at),
             ("last_sign_in_at", &dto.last_sign_in_at),
             ("gmt_create", &dto.gmt_create),
@@ -81,6 +85,7 @@ impl Account {
             ("phone", &dto.phone),
             ("password", &dto.password),
             ("role", &dto.role),
+            ("api_key", &dto.api_key),
             ("email_confirmed_at", &dto.email_confirmed_at),
             ("last_sign_in_at", &dto.last_sign_in_at),
             ("gmt_update", &dto.gmt_update),
@@ -123,6 +128,7 @@ impl Account {
             phone: record.get("phone").and_then(|v| v.as_str()).unwrap_or("").to_string(),
             password: record.get("password").and_then(|v| v.as_str()).unwrap_or("").to_string(),
             role: record.get("role").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+            api_key: record.get("api_key").and_then(|v| v.as_str()).map(|s| s.to_string()),
             email_confirmed_at: record.get("email_confirmed_at").and_then(|v| v.as_str()).map(|s| s.to_string()),
             last_sign_in_at: record.get("last_sign_in_at").and_then(|v| v.as_str()).map(|s| s.to_string()),
             gmt_create: record.get("gmt_create").and_then(|v| v.as_str()).unwrap_or("").to_string(),
@@ -145,6 +151,7 @@ mod tests {
             phone: Some("12345678901".to_string()),
             password: Some("hashed_password".to_string()),
             role: Some("user".to_string()),
+            api_key: None,
             email_confirmed_at: None,
             last_sign_in_at: None,
             gmt_create: None,
@@ -183,6 +190,7 @@ mod tests {
             phone: None,
             password: Some("new_hashed_password".to_string()),
             role: None,
+            api_key: None,
             email_confirmed_at: None,
             last_sign_in_at: None,
             gmt_create: None,

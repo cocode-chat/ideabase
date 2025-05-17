@@ -14,7 +14,7 @@ use argon2::{
 /// # 返回
 /// - `Ok(String)`: 哈希后的密码字符串
 /// - `Err(Box<dyn std::error::Error>)`: 发生错误时的错误信息
-fn hash_passwd(passwd: &str) -> Result<String, Box<dyn std::error::Error>> {
+pub fn hash_passwd(passwd: &str) -> Result<String, Box<dyn std::error::Error>> {
     // 生成一个随机盐值，增强哈希安全性
     let salt = SaltString::generate(&mut OsRng);
     // 创建默认配置的 Argon2 实例
@@ -35,7 +35,7 @@ fn hash_passwd(passwd: &str) -> Result<String, Box<dyn std::error::Error>> {
 /// # 返回
 /// - `true`: 密码匹配
 /// - `false`: 密码不匹配或哈希解析失败
-fn verify_passwd(passwd: &str, hashed_passwd: &str) -> bool {
+pub fn verify_passwd(passwd: &str, hashed_passwd: &str) -> bool {
     // 创建默认配置的 Argon2 实例
     let argon2 = Argon2::default();
     // 尝试解析哈希密码字符串

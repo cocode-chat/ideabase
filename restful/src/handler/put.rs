@@ -1,6 +1,7 @@
 use std::collections::HashMap;
+use http::StatusCode;
+use common::rpc::RpcResult;
 use database::core::{is_table_exists, DBConn};
-use crate::handler::build_rpc_value;
 
 /// 处理数据更新请求
 /// 
@@ -22,10 +23,10 @@ use crate::handler::build_rpc_value;
 ///   }
 /// }
 /// ```
-pub async fn handle_put(db: &DBConn, body_map: HashMap<String, serde_json::Value>) -> serde_json::Value {
-    let mut result_map = HashMap::new();
+pub async fn handle_put(db: &DBConn, body_map: HashMap<String, serde_json::Value>) -> RpcResult::<HashMap<String, serde_json::Value>> {
+    let mut rpc_result = RpcResult::<HashMap<String, serde_json::Value>>{ code: StatusCode::OK, msg: None, payload: None };
 
-    let mut code = 200;
+    let mut result_payload = HashMap::new();
     for (table_key, param) in body_map {
         match param.as_object() {
             Some(param_map) => {
@@ -37,37 +38,38 @@ pub async fn handle_put(db: &DBConn, body_map: HashMap<String, serde_json::Value
                     schema = schema_table_vec[0];
                     table = schema_table_vec[1];
                 } else {
-                    code = 400;
-                    let err_msg = format!("{}'s database should be specified", &table_key);
-                    result_map.insert((&table_key).to_string(), serde_json::json!(err_msg));
+                    rpc_result.code = StatusCode::BAD_REQUEST;
+                    result_payload.insert((&table_key).to_string(), serde_json::json!(format!("{}'s schema should be specified", &table_key)));
                     continue;
                 }
                 // 检查表是否存在，不存在则记录错误
                 if !is_table_exists(&schema, &table) {
-                    code = 400;
-                    let err_msg = format!("table {} not exists", &table_key);
-                    result_map.insert((&table_key).to_string(), serde_json::json!(err_msg));
+                    rpc_result.code = StatusCode::BAD_REQUEST;
+                    result_payload.insert((&table_key).to_string(), serde_json::json!(format!("table {} not exists", &table_key)));
                     continue;
                 }
 
                 // 更新数据
                 match update_one(db, &schema, &table, param_map).await {
                     Ok(id) => {
-                        result_map.insert(table_key.clone(), serde_json::json!(id));
+                        result_payload.insert(table_key.clone(), serde_json::json!(id));
                     },
                     Err(err) => {
-                        code = 400;
-                        result_map.insert(table_key.clone(), serde_json::Value::String(err));
+                        rpc_result.code = StatusCode::BAD_REQUEST;
+                        result_payload.insert(table_key.clone(), serde_json::Value::String(err));
                     }
                 }
             },
             None => {
-                code = 400;
-                result_map.insert(table_key.clone(), serde_json::Value::String(format!("参数格式错误，value: {:?}", param)));
+                rpc_result.code = StatusCode::BAD_REQUEST;
+                rpc_result.msg = Some("parameter format error".to_string());
             }
         }
     }
-    build_rpc_value(code, None, result_map)
+    if !result_payload.is_empty() {
+        rpc_result.payload = Some(result_payload);
+    }
+    rpc_result
 }
 
 // updateOne 执行单条记录的更新操作

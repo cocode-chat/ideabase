@@ -1,22 +1,19 @@
 use std::collections::HashMap;
+use http::StatusCode;
+use common::rpc::RpcResult;
 use database::core::{is_table_exists, DBConn};
-use crate::handler::build_rpc_value;
 
 /// 处理删除数据的请求
 /// 
 /// # 参数
 /// * `body_map` - 包含删除请求的数据映射，key为表名，value为删除条件
-/// 
-/// # 返回值
-/// 返回 JSON 格式的处理结果：
-/// * 成功：`{"表名": {"code": 200, "count": 影响行数}}`
-/// * 失败：`{"表名": {"code": 400, "msg": "错误信息"}}`
-pub async fn handle_delete(db: &DBConn, body_map: HashMap<String, serde_json::Value>) -> serde_json::Value {
-    let mut code = 200;
+///
+pub async fn handle_delete(db: &DBConn, body_map: HashMap<String, serde_json::Value>) -> RpcResult::<HashMap<String, serde_json::Value>> {
+    let mut rpc_result = RpcResult::<HashMap<String, serde_json::Value>>{ code: StatusCode::OK, msg: None, payload: None };
+
     // 初始化结果映射，用于存储每个表的处理结果
-    let mut result_map = HashMap::<String, serde_json::Value>::new();
-    
-    // 遍历请求体中的每个表及其参数
+    let mut result_payload = HashMap::<String, serde_json::Value>::new();
+    // 遍历请求体中的每个表及其参数 -> todo 事务保证数据操作结果一致性
     for (table_key, param) in body_map {
         // 检查参数是否为JSON对象格式
         match param.as_object() {
@@ -29,38 +26,37 @@ pub async fn handle_delete(db: &DBConn, body_map: HashMap<String, serde_json::Va
                     schema = schema_table_vec[0];
                     table = schema_table_vec[1];
                 } else {
-                    code = 400;
-                    let err_msg = format!("{}'s database should be specified", &table_key);
-                    result_map.insert((&table_key).to_string(), serde_json::json!(err_msg));
+                    rpc_result.code = StatusCode::BAD_REQUEST;
+                    result_payload.insert((&table_key).to_string(), serde_json::json!(format!("{}'s schema empty", &table_key)));
                     continue;
                 }
                 // 检查表是否存在，不存在则记录错误
                 if !is_table_exists(&schema, &table) {
-                    code = 400;
-                    let err_msg = format!("table {} not exists", &table_key);
-                    result_map.insert((&table_key).to_string(), serde_json::json!(err_msg));
+                    rpc_result.code = StatusCode::BAD_REQUEST;
+                    result_payload.insert((&table_key).to_string(), serde_json::json!(format!("table {} not exists", &table_key)));
                     continue;
                 }
 
                 // 删除操作
                 match do_delete(db, &schema, &table, param_map).await {
-                    Ok(n) => {
-                        // 删除成功，记录影响行数
-                        result_map.insert((&table_key).to_string(), serde_json::json!(n));
+                    Ok(n) => { // 删除成功，记录影响行数
+                        result_payload.insert((&table_key).to_string(), serde_json::json!(n));
                     },
-                    Err(err) => {
-                        // 删除失败，记录错误信息
-                        result_map.insert((&table_key).to_string(), serde_json::json!(err));
+                    Err(err) => { // 删除失败，记录错误信息
+                        result_payload.insert((&table_key).to_string(), serde_json::json!(err));
                     }
                 }
             },
             None => { // 参数格式错误，直接返回错误响应
-                code = 400;
-                result_map.insert(table_key.clone(), serde_json::Value::String(format!("参数格式错误，value: {:?}", param)));
+                rpc_result.code = StatusCode::BAD_REQUEST;
+                rpc_result.msg = Some("parameter format error".to_string());
             }
         }
     }
-    build_rpc_value(code, None, result_map)
+    if !result_payload.is_empty() {
+        rpc_result.payload = Some(result_payload);
+    }
+    rpc_result
 }
 
 /// 执行数据删除操作

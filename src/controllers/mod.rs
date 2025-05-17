@@ -2,14 +2,25 @@ pub mod rag_controller;
 pub mod restful_controller;
 pub mod account_controller;
 
-use actix_web::{get, http::StatusCode, web, HttpResponse, Responder};
+use actix_web::{get, http::StatusCode, web, HttpResponse, HttpResponseBuilder, Responder};
 use common::rpc::RpcResult;
 use crate::controllers::rag_controller::{conversation, recall};
 use crate::controllers::restful_controller::{curd, get_table_meta, get_table_names};
 
 // 快速返回结果
-pub fn return_rpc_result<T: serde::Serialize>(code: u16, msg: Option<String>, data: Option<T>) -> impl Responder {
-    HttpResponse::Ok().json(RpcResult{code, msg, data})
+pub fn build_rpc_response<T: serde::Serialize>(rpc_result: RpcResult<T>) -> impl Responder {
+    let status_code = rpc_result.code;
+    let err_msg = rpc_result.msg;
+    let payload = rpc_result.payload;
+    if status_code == StatusCode::OK {
+        let json_payload = match payload {
+            Some(value) => serde_json::to_value(value).unwrap_or_else(|_| serde_json::json!({"error": "Failed to serialize payload"})),
+            None => serde_json::json!({}),
+        };
+        HttpResponse::Ok().json(json_payload)
+    } else {
+        HttpResponseBuilder::new(status_code).json(serde_json::json!({"err_msg": err_msg}))
+    }
 }
 
 pub fn configure_cors() -> actix_cors::Cors {
@@ -23,7 +34,7 @@ pub fn configure_cors() -> actix_cors::Cors {
 
 #[get("/health")]
 async fn health() -> impl Responder {
-    return_rpc_result(StatusCode::OK.as_u16(), None, Some("I'm OK!"))
+    HttpResponse::Ok().json("I'm OK!")
 }
 
 pub fn register_routes(cfg: &mut web::ServiceConfig) {

@@ -4,7 +4,7 @@ pub mod service;
 
 use common::log::init_tk_log;
 use common::yaml::{load_env_yaml, GlobalEnv};
-use database::{core::init_datasource_conn, core::DBConn};
+use database::{init_datasource_conn, core::DBConn};
 use rag::handler::etl_handler::init_vector_db;
 
 #[macro_use] extern crate lazy_static;
