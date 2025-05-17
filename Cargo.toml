@@ -21,6 +21,7 @@ realtime = { path = "realtime" }
 storage = { path = "file-storage" }
 
 log = {  version = "0.4" }
+regex = { version = "1" }
 lazy_static = { version = "1"}
 once_cell = { version = "1.21" }
 jsonwebtoken = { version = "9" }

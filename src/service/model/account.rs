@@ -12,8 +12,6 @@ pub struct Account {
     pub id: i64,
     /// 用户邮箱地址
     pub email: String,
-    /// 用户手机号码
-    pub phone: String,
     /// 用户密码(加密后)
     pub password: String,
     /// 用户角色(admin/user等)
@@ -33,7 +31,6 @@ pub struct Account {
 #[derive(Debug, Clone, Deserialize)]
 pub struct AccountDTO {
     pub email: Option<String>,
-    pub phone: Option<String>,
     pub password: Option<String>,
     pub role: Option<String>,
     pub api_key: Option<String>,
@@ -54,7 +51,6 @@ impl Account {
         // 定义要检查的字段及其对应的值
         let fields = [
             ("email", &dto.email),
-            ("phone", &dto.phone),
             ("password", &dto.password),
             ("role", &dto.role),
             ("api_key", &dto.api_key),
@@ -82,7 +78,6 @@ impl Account {
         // 定义要更新的字段及其对应的值
         let fields = [
             ("email", &dto.email),
-            ("phone", &dto.phone),
             ("password", &dto.password),
             ("role", &dto.role),
             ("api_key", &dto.api_key),
@@ -125,7 +120,6 @@ impl Account {
         Account {
             id: record.get("id").and_then(|v| v.as_i64()).unwrap_or(0),
             email: record.get("email").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-            phone: record.get("phone").and_then(|v| v.as_str()).unwrap_or("").to_string(),
             password: record.get("password").and_then(|v| v.as_str()).unwrap_or("").to_string(),
             role: record.get("role").and_then(|v| v.as_str()).unwrap_or("").to_string(),
             api_key: record.get("api_key").and_then(|v| v.as_str()).map(|s| s.to_string()),
@@ -136,6 +130,38 @@ impl Account {
         }
     }
 }
+
+
+
+use std::fmt::{self, Display};
+use std::str::FromStr;
+/// 用户角色枚举
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub enum Role {
+    Admin,
+    User,
+}
+impl Display for Role {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Role::Admin => write!(f, "admin"),
+            Role::User => write!(f, "user"),
+        }
+    }
+}
+impl FromStr for Role {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "admin" => Ok(Role::Admin),
+            "user" => Ok(Role::User),
+            _ => Err(Error::Decode("Invalid role string".into())),
+        }
+    }
+}
+
+
 
 #[cfg(test)]
 mod tests {
@@ -148,7 +174,6 @@ mod tests {
 
         let dto = AccountDTO {
             email: Some("test@example.com".to_string()),
-            phone: Some("12345678901".to_string()),
             password: Some("hashed_password".to_string()),
             role: Some("user".to_string()),
             api_key: None,
@@ -187,7 +212,6 @@ mod tests {
         // 准备测试数据
         let dto = AccountDTO {
             email: Some("updated@example.com".to_string()),
-            phone: None,
             password: Some("new_hashed_password".to_string()),
             role: None,
             api_key: None,

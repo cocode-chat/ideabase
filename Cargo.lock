@@ -1050,7 +1050,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tklog",
- "tokio-test",
+ "uuid",
 ]
 
 [[package]]
@@ -2434,6 +2434,7 @@ dependencies = [
  "once_cell",
  "rag",
  "realtime",
+ "regex",
  "restful",
  "sea-orm",
  "serde",
