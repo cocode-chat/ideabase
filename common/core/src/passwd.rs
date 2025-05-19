@@ -54,11 +54,11 @@ mod tests {
 
     #[test]
     fn test_hash_password() {
-        let result = hash_passwd("123456");
+        let result = hash_passwd("Zkkk@1122");
         match result {
             Ok(hashed_passwd) => {
                 println!("hashed_passwd: {}", hashed_passwd);
-                let is_ok = verify_passwd("123456", &hashed_passwd);
+                let is_ok = verify_passwd("Zkkk@1122", &hashed_passwd);
                 println!("is_ok: {is_ok}");
             }
             Err(err) => {

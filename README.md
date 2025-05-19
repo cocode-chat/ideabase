@@ -5,14 +5,15 @@
 提供三大核心组件
 - AI智能体服务
 - BaaS核心基础设施
-- 可嵌入的应用对话组件 - Web组件、桌面组件、移动端组件、小程序组件
+- 可嵌入的应用对话组件 - Web、移动端、桌面、小程序等平台组件
 
 开发者无需从零搭建后台或混合多种AI服务，就能在其应用中快速集成智能对话体验。业务表现为智能客服、智能询盘、AI员工、...
 
 ## 核心概念
 ### AI时代的BaaS
-BaaS平台：提供数据库、存储、身份验证、云函数等一站式后端服务，节省基础架构搭建和维护成本。
-Firebase是Google推出的领先BaaS平台，其产品线包括 Realtime Database、Cloud Firestore、Authentication、Functions等基础服务。
+    BaaS平台：提供数据库、存储、身份验证、云函数等一站式后端服务，节省基础架构搭建和维护成本。
+Firebase是Google推出的领先BaaS平台，其产品线包括Realtime Database、Cloud Filestore、Authentication、Cloud Functions等基础服务。
+
 Ideabase在Firebase基础上实现了三大AI能力突破：
 1. **业务知识中枢**：将数据库转化为领域知识库，使智能体具备业务专家级认知
 2. **业务智能体专家**：基于真实业务数据训练，可：
@@ -24,17 +25,17 @@ Ideabase在Firebase基础上实现了三大AI能力突破：
    - 支持多模态业务交互（工单/合同/报表等）
    - 形成可复用的领域知识图谱
 
-这些能力使Ideabase成为首个实现"业务智能体专家化"的BaaS平台。
+这些能力使 **Ideabase** 成为首个实现"**业务智能体专家化**"的BaaS平台。
 
 ### 应用对话组件
 通过简单引入对应平台组件即可获得完整智能体对话能力：
 - **即插即用**：只需几行代码即可集成预制对话组件
-- **多平台支持**：提供Web、桌面、移动端、小程序等全平台组件
+- **多平台支持**：提供Web、移动端、桌面、小程序等全平台组件
   - 对话窗口
   - 消息气泡
   - 会话历史
-- **智能体集成**：自动连接ideabase的智能体服务，无需额外配置
-- **深度定制**：支持主题、皮肤、布局自定义，满足品牌个性化需求
+- **智能体集成**：自动连接Ideabase的智能体服务，无需额外配置
+- **可深度定制**：支持主题、皮肤、布局自定义，满足品牌个性化需求
 
 ## 功能进度
 - [x] Hosted MySQL Database.
@@ -46,7 +47,7 @@ Ideabase在Firebase基础上实现了三大AI能力突破：
   - [ ] RAG base on upload file
   - [ ] MCP autogen
 - [ ] File Storage
-- [ ] Authentication
+- [x] Authentication
 - [ ] Authorization
 - [ ] Dashboard
 

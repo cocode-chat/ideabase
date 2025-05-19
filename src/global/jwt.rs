@@ -8,9 +8,9 @@ use crate::G_ENV;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JwtToken {
-    sub: i64,      // Subject (e.g., user ID)
-    role: String,  // Role (e.g., "admin", "user")
-    exp: u128,     // Expiration time (as UTC timestamp)
+    pub sub: i64,      // Subject (e.g., user ID)
+    pub role: String,  // Role (e.g., "admin", "user")
+    pub exp: u128,     // Expiration time (as UTC timestamp)
 }
 
 impl FromRequest for JwtToken {
@@ -39,8 +39,7 @@ impl FromRequest for JwtToken {
                 }
             };
             // 验证token
-            let secret = &G_ENV.jwt.secret;
-            match JwtToken::verify(token, secret) {
+            match JwtToken::verify(token) {
                 Ok(jwt_token) => Ok(jwt_token),
                 Err(err) => {
                     log::error!("Authorization token verify error, path: {} token: {} {:?}", path, token, err);
@@ -54,21 +53,23 @@ impl FromRequest for JwtToken {
 
 impl JwtToken {
 
-    pub fn new(sub: i64, role: &str, exp_hour: u32) -> JwtToken {
+    pub fn new(sub: i64, role: &str) -> JwtToken {
+        let exp_hour = &G_ENV.jwt.expire_hour;
         let exp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() + (exp_hour * 3600 * 1000) as u128;
         JwtToken { sub, role: role.to_string(), exp }
     }
 
     /// create jwt token
-    pub fn create_token(&self, secret: &str) -> Result<String, Error> {
+    pub fn create_token(&self) -> Result<String, Error> {
+        let secret = &G_ENV.jwt.secret;
         encode(&Header::default(), self, &EncodingKey::from_secret(secret.as_ref()))
             .map_err(Into::into)
     }
 
     /// verify jwt token
-    pub fn verify(token: &str, secret: &str) -> Result<JwtToken, Error> {
-        let mut validation = Validation::new(Algorithm::HS256);
-        validation.set_required_spec_claims(&["sub", "role", "exp"]);
+    pub fn verify(token: &str) -> Result<JwtToken, Error> {
+        let secret = &G_ENV.jwt.secret;
+        let validation = Validation::new(Algorithm::HS256);
         decode::<Self>(token, &DecodingKey::from_secret(secret.as_ref()), &validation)
             .map(|c| c.claims)
             .map_err(Into::into)
@@ -86,13 +87,19 @@ mod tests {
     fn test_jwt() {
         init_tk_log();
 
-        let secret = "secret";
         let sub = 1270790813134464;
         let role = "admin";
-        let jwt = JwtToken::new(sub, role, 3u32);
-        let res = jwt.create_token(secret).unwrap();
-        log::info!("token.0: {:?}",res);
-        let token = JwtToken::verify(&res, secret);
-        log::info!("token.1: {:?}",token)
+        let jwt = JwtToken::new(sub, role);
+        let res = jwt.create_token().unwrap();
+        println!("token.0: {:?}",res);
+        let token = JwtToken::verify(&res);
+        match token {
+            Ok(token) => {
+                println!("token.1: {:?}",token)
+            }
+            Err(err) => {
+                eprintln!("token.1: {:?}", err)
+            },
+        }
     }
 }

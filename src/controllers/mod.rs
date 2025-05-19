@@ -4,7 +4,7 @@ pub mod account_controller;
 
 use actix_web::{get, http::StatusCode, web, HttpResponse, HttpResponseBuilder, Responder};
 use common::rpc::RpcResult;
-use crate::controllers::account_controller::{create_account, gen_account_api_key};
+use crate::controllers::account_controller::{create, generate_api_key, logon};
 use crate::controllers::rag_controller::{conversation, recall};
 use crate::controllers::restful_controller::{curd, get_table_meta, get_table_names};
 
@@ -47,7 +47,7 @@ pub fn register_routes(cfg: &mut web::ServiceConfig) {
         .service(curd)
         .service(get_table_names).service(get_table_meta)
         .service(recall).service(conversation)
-        .service(create_account).service(gen_account_api_key)
+        .service(logon).service(create).service(generate_api_key)
     ;
 
     cfg.service(api_scope);
