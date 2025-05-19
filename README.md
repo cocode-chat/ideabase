@@ -5,14 +5,14 @@
 提供三大核心组件
 - AI智能体服务
 - BaaS核心基础设施
-- 可嵌入的应用对话组件 - Web组件、桌面组件、移动端组件、小程序组件
+- 可嵌入的应用对话组件 - Web、移动端、桌面、小程序等平台组件
 
 开发者无需从零搭建后台或混合多种AI服务，就能在其应用中快速集成智能对话体验。业务表现为智能客服、智能询盘、AI员工、...
 
 ## 核心概念
 ### AI时代的BaaS
     BaaS平台：提供数据库、存储、身份验证、云函数等一站式后端服务，节省基础架构搭建和维护成本。
-Firebase是Google推出的领先BaaS平台，其产品线包括 Realtime Database、Cloud Firestore、Authentication、Functions等基础服务。
+Firebase是Google推出的领先BaaS平台，其产品线包括Realtime Database、Cloud Filestore、Authentication、Cloud Functions等基础服务。
 
 Ideabase在Firebase基础上实现了三大AI能力突破：
 1. **业务知识中枢**：将数据库转化为领域知识库，使智能体具备业务专家级认知
