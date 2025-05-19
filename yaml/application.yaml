@@ -1,2 +1,6 @@
 cache:
   dir: /opt/cache/ideabase
+
+jwt:
+  secret: a1b2c3
+  expire_hour: 6

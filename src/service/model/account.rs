@@ -5,6 +5,8 @@ use sqlx::{Error, Result};
 
 use common::utils::get_next_id;
 
+pub const IB_SCHEMA_NAME: &str = "ideabase";
+
 /// 用户账户信息结构体
 #[derive(Debug, sqlx::FromRow)]
 pub struct Account {
@@ -63,13 +65,13 @@ impl Account {
         // 收集存在的字段名和值
         for (field_name, field_value) in &fields {
             if let Some(value) = field_value {
-                columns.push(field_name.to_string());
+                columns.push(ToString::to_string(field_name));
                 values.push(format!("'{}'", value.replace("'", "''")));
             }
         }
         
         // 构建完整SQL语句
-        let create_sql = format!("INSERT INTO `ideabase`.`account` ({}) VALUES ({})", columns.join(", "), values.join(", "));
+        let create_sql = format!("INSERT INTO `{IB_SCHEMA_NAME}`.`account` ({}) VALUES ({})", columns.join(", "), values.join(", "));
         log::info!("account.create.SQL: {}", create_sql);
         db_conn.insert(&create_sql).await.map(|_| account_id)
     }
@@ -100,20 +102,33 @@ impl Account {
         }
         
         // 构建完整SQL语句
-        let update_sql = format!("UPDATE `ideabase`.`account` SET {} WHERE id = {}", set_clauses.join(", "), account_id);
+        let update_sql = format!("UPDATE `{IB_SCHEMA_NAME}`.`account` SET {} WHERE id = {}", set_clauses.join(", "), account_id);
         log::info!("account.update.SQL: {}", update_sql);
         
         // 执行更新并处理结果
         db_conn.update(&update_sql).await.map(|cnt| if cnt > 0 { account_id } else { -1 })
     }
 
-
     pub async fn fetch_by_id(db_conn: &DBConn, account_id: i64) -> Result<Account, Error> {
-        let select_sql = "SELECT * FROM `ideabase`.`account` WHERE id = ?";
+        let select_sql = format!("SELECT * FROM `{IB_SCHEMA_NAME}`.`account` WHERE id = ?");
         log::info!("account.fetch.SQL: {}", select_sql);
-        let fetch_result = db_conn.query_one(select_sql, vec![account_id.to_string()]).await?;
+        let fetch_result = db_conn.query_one(&select_sql, vec![account_id.to_string()]).await?;
         let record = fetch_result.ok_or(Error::RowNotFound)?;
         Ok(Self::from_record(&record))
+    }
+
+    pub async fn fetch_by_email(db_conn: &DBConn, email: &str) -> Result<Account, Error> {
+        let select_sql = format!("SELECT * FROM `{IB_SCHEMA_NAME}`.`account` WHERE email = ?");
+        let fetch_result = db_conn.query_one(&select_sql, vec![email.to_string()]).await?;
+        let record = fetch_result.ok_or(Error::RowNotFound)?;
+        Ok(Self::from_record(&record))
+    }
+
+    pub async fn count_by_email(db_conn: &DBConn, email: &str) -> Result<i64, Error> {
+        let count_sql = format!("SELECT count(1) FROM `{IB_SCHEMA_NAME}`.`account` WHERE email = ?");
+        log::info!("account.count_by_email.SQL: {}", count_sql);
+        let cnt = db_conn.count(&count_sql, vec![email.to_string()]).await?;
+        Ok(cnt)
     }
 
     fn from_record(record: &HashMap<String, serde_json::Value>) -> Self {
@@ -135,6 +150,7 @@ impl Account {
 
 use std::fmt::{self, Display};
 use std::str::FromStr;
+
 /// 用户角色枚举
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub enum Role {

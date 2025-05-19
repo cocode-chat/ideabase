@@ -38,7 +38,7 @@ pub fn serde_json_map_to_hashmap(map: &serde_json::Map<String, serde_json::Value
 }
 
 // 生成安全的API Key
-pub fn generate_api_key(id: i64) -> String {
+pub fn do_generate_api_key(id: i64) -> String {
     let hex_id = hex_shuffle(id);
     let uuid = uuid::Uuid::new_v4().to_string().replace("-", "");
     format!("{}_{}", hex_id, uuid).to_uppercase()
@@ -63,11 +63,11 @@ pub fn hex_shuffle(id: i64) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::generate_api_key;
+    use crate::utils::do_generate_api_key;
 
     #[test]
     fn test_generate_secure_api_key() {
-        let api_key = generate_api_key(11111i64);
+        let api_key = do_generate_api_key(11111i64);
         println!("{}", api_key);
     }
 }
