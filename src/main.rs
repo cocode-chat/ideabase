@@ -25,10 +25,8 @@ async fn main() -> std::io::Result<()> {
         let db_conn = init_datasource_conn(&mysql_url).await.expect("datasource init error");
         G_DB.set(db_conn).unwrap();
         
-        // 实时数据 - 在单独的线程中执行
-        // tokio::spawn(async move {
-        //     init_mysql_binlog_listener(&mysql_url);
-        // });
+        // 实时数据
+        // realtime::init_mysql_binlog_listener(&mysql_url);
         
         // 向量数据库 - 在单独的线程中执行
         let db_conn = G_DB.get().unwrap().clone();

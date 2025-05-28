@@ -1,4 +1,40 @@
 services:
+  postgres:
+    container_name: postgres
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    command: [
+      "postgres",
+      "-c", "timezone=Asia/Shanghai",
+      "-c", "wal_level=logical",
+      "-c", "max_wal_senders=10",
+      "-c", "max_replication_slots=10"
+    ]
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: ideabase2025
+      POSTGRES_DB: ideabase
+      TZ: Asia/Shanghai
+    ports:
+      - "5432:5432"
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+  redis:
+    image: redis/redis-stack:latest
+    container_name: redis
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      REDIS_ARGS: "--requirepass Ideabase2025"
+    ports:
+      - 6379:6379
+      - 8001:8001
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "20"
   mysql:
     container_name: mysql
     image: mysql:9.3.0
@@ -19,7 +55,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
       - .sql-demo/init.sql:/docker-entrypoint-initdb.d/init.sql
-
   qdrant:
     container_name: qdrant
     image: qdrant/qdrant:v1.14.0
@@ -34,21 +69,21 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
 
-  ideabase:
-    container_name: ideabase
-    image: cc/ideabase:latest
-    ports:
-      - 8080:8080
-    restart: always
-    environment:
-      - TZ=Asia/Shanghai
-    env_file:
-      - Docker-run-env.properties
-    depends_on:
-      - qdrant
-      - mysql
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
-      - .docker/volume/cache:/opt/cache/ideabase
-      - .json-demo/vector.json:/app/yaml/vector.json
+#  ideabase:
+#    container_name: ideabase
+#    image: cc/ideabase:latest
+#    ports:
+#      - 8080:8080
+#    restart: always
+#    environment:
+#      - TZ=Asia/Shanghai
+#    env_file:
+#      - Docker-run-env.properties
+#    depends_on:
+#      - qdrant
+#      - mysql
+#    volumes:
+#      - /etc/localtime:/etc/localtime:ro
+#      - /etc/timezone:/etc/timezone:ro
+#      - .docker/volume/cache:/opt/cache/ideabase
+#      - .json-demo/vector.json:/app/yaml/vector.json
