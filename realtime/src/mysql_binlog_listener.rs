@@ -18,24 +18,29 @@ pub fn start_mysql_binlog_listener(mysql_jdbc: String, server_id: u64, binlog_fi
 }
 
 async fn read_mysql_binlog(mysql_jdbc: String, server_id: u64, binlog_filename: &str) {
-    let mut binlog_client = BinlogClient {
+    let mut client = BinlogClient {
         server_id,
         url: mysql_jdbc,
         binlog_filename: binlog_filename.to_string(),
         binlog_position: 0,
         gtid_enabled: false,
-        gtid_set: String::new(),
+        gtid_set: "".to_string(),
         heartbeat_interval_secs: 10,
         timeout_secs: 6,
     };
 
     loop {
-        match binlog_client.connect().await {
+        match client.connect().await {
             Ok(mut stream) => {
                 log::info!("MySQL.binlog Stream connected...");
                 loop {
                     match stream.read().await {
-                        Ok((_, data)) => handle_binlog_event(data),
+                        Ok((header, data)) => {
+                            // 1. 处理事件
+                            handle_binlog_event(data);
+                            // 2. 打印日志
+                            println!("client.next_event_position: {}", header.next_event_position)
+                        },
                         Err(e) => {
                             log::error!("读取MySQL.binlog事件失败: {:?}", e);
                             break; // 连接断开，跳出内层循环，重试连接

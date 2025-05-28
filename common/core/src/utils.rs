@@ -40,7 +40,7 @@ pub fn serde_json_map_to_hashmap(map: &serde_json::Map<String, serde_json::Value
 // 生成安全的API Key
 pub fn do_generate_api_key(id: i64) -> String {
     let hex_id = hex_shuffle(id);
-    let uuid = uuid::Uuid::new_v4().to_string().replace("-", "");
+    let uuid = uuid7::uuid7().to_string().replace("-", "");
     format!("{}_{}", hex_id, uuid).to_uppercase()
 }
 
