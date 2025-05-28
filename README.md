@@ -2,7 +2,7 @@
 
 [Ideabase](https://github.com/cocode-chat/ideabase) - AI时代的Firebase, 专注于让每个应用(web,app,miniapp)自然生长出智能对话框。
 
-提供三大核心能力
+提供三大核心组件
 - AI智能体服务
 - BaaS核心基础设施
 - 可嵌入的应用对话组件
