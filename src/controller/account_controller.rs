@@ -8,7 +8,7 @@ use common::rpc::RpcResult;
 use common::passwd::hash_passwd;
 use common::date::{format_datetime_ymd_hms, get_cur_local_datetime};
 use common::utils::do_generate_api_key;
-use crate::controllers::build_rpc_response;
+use crate::controller::build_rpc_response;
 use crate::G_DB;
 use crate::global::jwt::JwtToken;
 use crate::service::model::account::{Account, AccountDTO, Role};

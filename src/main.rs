@@ -1,4 +1,4 @@
-mod controllers;
+mod controller;
 pub mod global;
 pub mod service;
 
@@ -43,8 +43,8 @@ async fn main() -> std::io::Result<()> {
     let http_server = actix_web::HttpServer::new(|| {
         actix_web::App::new()
             .wrap(actix_web::middleware::Logger::default())
-            .wrap(controllers::configure_cors())
-            .configure(controllers::register_routes)
+            .wrap(controller::cors())
+            .configure(controller::register_routes)
     });
     log::info!("IDEA-BASE starting at http://0.0.0.0:8080");
     http_server.workers(4).bind(("0.0.0.0", 8080))?.run().await

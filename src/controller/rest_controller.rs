@@ -9,8 +9,8 @@ use restful::handler::get::handle_get;
 use restful::handler::head::handle_head;
 use restful::handler::post::handle_post;
 use restful::handler::put::handle_put;
+use crate::controller::build_rpc_response;
 use crate::G_DB;
-use crate::controllers::build_rpc_response;
 
 
 pub fn scope() -> actix_web::Scope {

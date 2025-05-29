@@ -4,7 +4,7 @@ use http::StatusCode;
 use common::rpc::RpcResult;
 use rag::handler::conversation_handler::conversation_call;
 use rag::handler::retriever_handler::similarity_search;
-use crate::controllers::build_rpc_response;
+use crate::controller::build_rpc_response;
 
 pub fn scope() -> actix_web::Scope {
     web::scope("/ai").service(recall).service(conversation)

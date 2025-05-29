@@ -21,7 +21,7 @@ pub fn build_rpc_response<T: serde::Serialize>(rpc_result: RpcResult<T>) -> impl
     }
 }
 
-pub fn configure_cors() -> actix_cors::Cors {
+pub fn cors() -> actix_cors::Cors {
     actix_cors::Cors::default()
         .allowed_origin("https://ideabase.io")
         .allowed_methods(vec!["*"])
@@ -30,22 +30,19 @@ pub fn configure_cors() -> actix_cors::Cors {
         .max_age(3600)
 }
 
+pub fn register_routes(cfg: &mut web::ServiceConfig) {
+    // health
+    cfg.service(health);
+    // module scope
+    cfg.service(web::scope("/api/v1")
+        .service(account_controller::scope())
+        .service(rest_controller::scope())
+        .service(ai_rag_controller::scope()))
+    ;
+}
+
 #[get("/health")]
 async fn health() -> impl Responder {
     HttpResponse::Ok().json("I'm OK!")
-}
-
-pub fn register_routes(cfg: &mut web::ServiceConfig) {
-    //health
-    cfg.service(health);
-
-    // api scope
-    let api_scope = web::scope("/api/v1")
-        .service(account_controller::scope())
-        .service(rest_controller::scope())
-        .service(ai_rag_controller::scope())
-    ;
-
-    cfg.service(api_scope);
 }
 
