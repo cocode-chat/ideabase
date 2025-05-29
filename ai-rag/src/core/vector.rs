@@ -3,7 +3,8 @@ use std::sync::{Arc, Mutex};
 use once_cell::sync::Lazy;
 use langchain_rust::vectorstore::{qdrant::{Qdrant, Store, QdrantClient, StoreBuilder}, VectorStore};
 
-use crate::core::llm::{build_retriever_chain, get_llm_embedder, RETRIEVER_CHAINS};
+use crate::core::llm::get_embedder_llm;
+use crate::core::chain::{build_retriever_chain, RETRIEVER_CHAINS};
 
 // 全局缓存，使用 Arc<VectorStore> 存储向量存储实例
 pub static VECTOR_STORES: Lazy<Mutex<HashMap<String, Arc<dyn VectorStore>>>> = Lazy::new(|| {
@@ -59,7 +60,7 @@ pub async fn build_vector_store(collection_name: &str) -> Result<Store, String> 
     // 创建Qdrant客户端实例
     let vector_db_client = get_vector_client()?;
     // 初始化OpenAI嵌入器(Embedder)
-    let embedder = get_llm_embedder()?;
+    let embedder = get_embedder_llm()?;
     // 构建向量存储客户端
     let vector_db_store = StoreBuilder::new()
         .embedder(embedder)           // 设置嵌入器
@@ -76,9 +77,19 @@ pub async fn build_vector_store(collection_name: &str) -> Result<Store, String> 
     }
 }
 
+/// 获取Qdrant向量数据库客户端
+/// 
+/// 从环境变量中读取VECTOR_DB_URL和VECTOR_API_KEY配置，
+/// 创建并返回Qdrant客户端实例
+/// 
+/// # 返回值
+/// 返回Result类型，成功时包含Qdrant客户端实例，失败时返回错误信息
 pub fn get_vector_client() -> Result<Qdrant, String> {
+    // 从环境变量获取向量数据库URL
     let vector_db_url = std::env::var("VECTOR_DB_URL")
         .map_err(|_| "Missing VECTOR_DB_URL environment variable")?;
+    
+    // 从环境变量获取API密钥    
     let api_key = std::env::var("VECTOR_API_KEY")
         .map_err(|_| "Missing VECTOR_API_KEY environment variable")?;
 
@@ -87,5 +98,7 @@ pub fn get_vector_client() -> Result<Qdrant, String> {
         .api_key(api_key)
         .build()
         .unwrap();
+        
+    // 返回客户端实例
     Ok(vector_db_client)
 }

@@ -492,7 +492,7 @@ mod tests {
     use common::log::init_tk_log;
     use database::core::DBConn;
     use crate::core::vector::init_vector_store;
-    use crate::core::vector_data_etl::init_collection_documents;
+    use crate::core::vector_doc::init_collection_documents;
 
     #[test]
     fn test_add_collection_documents() {
