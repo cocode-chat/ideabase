@@ -46,6 +46,8 @@ Ideabase在Firebase基础上实现了三大AI能力突破：
   - [x] RAG base on hosted database
   - [ ] RAG base on upload file
   - [ ] MCP autogen
+  - [ ] MCP Center
+  - [ ] MCP Proxy
 - [ ] File Storage
 - [x] Authentication
 - [ ] Authorization
