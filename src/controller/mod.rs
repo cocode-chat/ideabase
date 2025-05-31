@@ -1,12 +1,9 @@
-pub mod rag_controller;
-pub mod restful_controller;
+pub mod ai_rag_controller;
+pub mod rest_controller;
 pub mod account_controller;
 
 use actix_web::{get, http::StatusCode, web, HttpResponse, HttpResponseBuilder, Responder};
 use common::rpc::RpcResult;
-use crate::controllers::account_controller::{create, generate_api_key, logon};
-use crate::controllers::rag_controller::{conversation, recall};
-use crate::controllers::restful_controller::{curd, get_table_meta, get_table_names};
 
 // 快速返回结果
 pub fn build_rpc_response<T: serde::Serialize>(rpc_result: RpcResult<T>) -> impl Responder {
@@ -24,7 +21,7 @@ pub fn build_rpc_response<T: serde::Serialize>(rpc_result: RpcResult<T>) -> impl
     }
 }
 
-pub fn configure_cors() -> actix_cors::Cors {
+pub fn cors() -> actix_cors::Cors {
     actix_cors::Cors::default()
         .allowed_origin("https://ideabase.io")
         .allowed_methods(vec!["*"])
@@ -33,23 +30,19 @@ pub fn configure_cors() -> actix_cors::Cors {
         .max_age(3600)
 }
 
+pub fn register_routes(cfg: &mut web::ServiceConfig) {
+    // health
+    cfg.service(health);
+    // module scope
+    cfg.service(web::scope("/api/v1")
+        .service(account_controller::scope())
+        .service(rest_controller::scope())
+        .service(ai_rag_controller::scope()))
+    ;
+}
+
 #[get("/health")]
 async fn health() -> impl Responder {
     HttpResponse::Ok().json("I'm OK!")
-}
-
-pub fn register_routes(cfg: &mut web::ServiceConfig) {
-    //health
-    cfg.service(health);
-
-    // api scope
-    let api_scope = web::scope("/api/v1")
-        .service(curd)
-        .service(get_table_names).service(get_table_meta)
-        .service(recall).service(conversation)
-        .service(logon).service(create).service(generate_api_key)
-    ;
-
-    cfg.service(api_scope);
 }
 

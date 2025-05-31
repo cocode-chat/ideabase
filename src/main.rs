@@ -1,11 +1,11 @@
-mod controllers;
+mod controller;
 pub mod global;
 pub mod service;
 
 use common::log::init_tk_log;
 use common::yaml::{load_env_yaml, GlobalEnv};
 use database::{init_datasource_conn, core::DBConn};
-use rag::handler::etl_handler::init_vector_db;
+use rag::handler::vectorize_handler::init_vector_db;
 
 #[macro_use] extern crate lazy_static;
 lazy_static! {
@@ -43,8 +43,8 @@ async fn main() -> std::io::Result<()> {
     let http_server = actix_web::HttpServer::new(|| {
         actix_web::App::new()
             .wrap(actix_web::middleware::Logger::default())
-            .wrap(controllers::configure_cors())
-            .configure(controllers::register_routes)
+            .wrap(controller::cors())
+            .configure(controller::register_routes)
     });
     log::info!("IDEA-BASE starting at http://0.0.0.0:8080");
     http_server.workers(4).bind(("0.0.0.0", 8080))?.run().await

@@ -69,21 +69,21 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
 
-#  ideabase:
-#    container_name: ideabase
-#    image: cc/ideabase:latest
-#    ports:
-#      - 8080:8080
-#    restart: always
-#    environment:
-#      - TZ=Asia/Shanghai
-#    env_file:
-#      - Docker-run-env.properties
-#    depends_on:
-#      - qdrant
-#      - mysql
-#    volumes:
-#      - /etc/localtime:/etc/localtime:ro
-#      - /etc/timezone:/etc/timezone:ro
-#      - .docker/volume/cache:/opt/cache/ideabase
-#      - .json-demo/vector.json:/app/yaml/vector.json
+  ideabase:
+    container_name: ideabase
+    image: cc/ideabase:latest
+    ports:
+      - 8080:8080
+    restart: always
+    environment:
+      - TZ=Asia/Shanghai
+    env_file:
+      - Docker-run-env.properties
+    depends_on:
+      - qdrant
+      - mysql
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - .docker/volume/cache:/opt/cache/ideabase
+      - .json-demo/vector.json:/app/yaml/vector.json

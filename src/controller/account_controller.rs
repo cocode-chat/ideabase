@@ -1,34 +1,25 @@
-use actix_web::{post, web, Responder};
+use regex::Regex;
 use http::StatusCode;
-use regex::Regex; 
 use lazy_static::lazy_static;
-
-use common::passwd::hash_passwd;
-use common::rpc::RpcResult;
 use serde::{Deserialize, Serialize};
+use actix_web::{post, web, Responder};
+
+use common::rpc::RpcResult;
+use common::passwd::hash_passwd;
 use common::date::{format_datetime_ymd_hms, get_cur_local_datetime};
 use common::utils::do_generate_api_key;
+use crate::controller::build_rpc_response;
 use crate::G_DB;
-use crate::controllers::build_rpc_response;
 use crate::global::jwt::JwtToken;
 use crate::service::model::account::{Account, AccountDTO, Role};
 
-lazy_static! {
-    // 定义邮箱验证的正则表达式
-    static ref EMAIL_REGEX: Regex = Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap();
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct AccountRequest {
-    pub id: Option<i64>,
-    pub email: Option<String>,
-    pub password: Option<String>,
-    pub role: Option<String>,
+pub fn scope() -> actix_web::Scope {
+    web::scope("/auth").service(logon).service(create).service(generate_api_key)
 }
 
 // 用户登录
-#[post("/auth/logon.json")]
-pub async fn logon(request_data: web::Json<AccountRequest>) -> impl Responder {
+#[post("/logon.json")]
+async fn logon(request_data: web::Json<AccountRequest>) -> impl Responder {
     let account_request = request_data.into_inner();
 
     // 1. 验证输入参数
@@ -90,8 +81,8 @@ pub async fn logon(request_data: web::Json<AccountRequest>) -> impl Responder {
 }
 
 // 创建普通用户 todo: admin账号才可以
-#[post("/auth/account.json")]
-pub async fn create(request_data: web::Json<AccountRequest>) -> impl Responder {
+#[post("/account.json")]
+async fn create(request_data: web::Json<AccountRequest>) -> impl Responder {
     let mut account_request = request_data.into_inner();
 
     // 使用模式匹配进行参数验证
@@ -168,8 +159,8 @@ pub async fn create(request_data: web::Json<AccountRequest>) -> impl Responder {
 
 
 // 为用户生成 api_key
-#[post("/auth/account/api-key.json")]
-pub async fn generate_api_key(token: JwtToken) -> impl Responder {
+#[post("/account/api-key.json")]
+async fn generate_api_key(token: JwtToken) -> impl Responder {
     let account_id = token.sub;
     let db_conn = G_DB.get().unwrap();
     
@@ -190,4 +181,18 @@ pub async fn generate_api_key(token: JwtToken) -> impl Responder {
         },
         Err(err) => build_rpc_response(RpcResult { code: StatusCode::INTERNAL_SERVER_ERROR, msg: Some(format!("account fetch error: {}", err)), payload: None })
     }
+}
+
+
+lazy_static! {
+    // 定义邮箱验证的正则表达式
+    static ref EMAIL_REGEX: Regex = Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap();
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct AccountRequest {
+    pub id: Option<i64>,
+    pub email: Option<String>,
+    pub password: Option<String>,
+    pub role: Option<String>,
 }

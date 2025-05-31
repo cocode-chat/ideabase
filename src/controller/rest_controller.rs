@@ -9,8 +9,13 @@ use restful::handler::get::handle_get;
 use restful::handler::head::handle_head;
 use restful::handler::post::handle_post;
 use restful::handler::put::handle_put;
+use crate::controller::build_rpc_response;
 use crate::G_DB;
-use crate::controllers::build_rpc_response;
+
+
+pub fn scope() -> actix_web::Scope {
+    web::scope("/rest").service(curd).service(get_table_names).service(get_table_meta)
+}
 
 /// 处理CRUD操作的REST API端点
 ///
@@ -21,8 +26,8 @@ use crate::controllers::build_rpc_response;
 ///
 /// # 返回值
 /// 返回JSON格式的响应数据，包含操作结果或错误信息
-#[post("/rest/{method}.json")]
-pub async fn curd(params: web::Path<String>, request_data: web::Json<HashMap<String, serde_json::Value>>) -> impl Responder {
+#[post("/{method}.json")]
+async fn curd(params: web::Path<String>, request_data: web::Json<HashMap<String, serde_json::Value>>) -> impl Responder {
     let method = params.into_inner();
     let request_data = request_data.into_inner();
     let rpc_result: RpcResult<HashMap<String, serde_json::Value>>;
@@ -55,15 +60,15 @@ pub async fn curd(params: web::Path<String>, request_data: web::Json<HashMap<Str
     build_rpc_response(rpc_result)
 }
 
-#[get("/rest/{schema}/tables.json")]
-pub async fn get_table_names(schema: web::Path<String>) -> impl Responder {
+#[get("/{schema}/tables.json")]
+async fn get_table_names(schema: web::Path<String>) -> impl Responder {
     let schema = schema.into_inner();
     let table_name_map = get_table_name_list(&schema);
     build_rpc_response(RpcResult{ code: StatusCode::OK, msg: None, payload: Some(table_name_map)})
 }
 
-#[get("/rest/{schema}/{table}.json")]
-pub async fn get_table_meta(params: web::Path<(String, String)>) -> impl Responder {
+#[get("/{schema}/{table}.json")]
+async fn get_table_meta(params: web::Path<(String, String)>) -> impl Responder {
     let (schema, table) = params.into_inner();
     let table_mata_opt = get_table(&schema, &table);
     let mut rpc_result = RpcResult{ code: StatusCode::OK, msg: None, payload: None };
